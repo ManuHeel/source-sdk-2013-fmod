@@ -209,7 +209,8 @@ static ConCommand startEvent("fmod_startevent", CC_StartEvent, "FMOD: Start an e
 // - value: The value to set the FMOD Parameter to
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
-int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {;
+int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {
+    ;
     FMOD_RESULT result;
     result = fmodStudioSystem->setParameterByName(parameterName, value);
     fmodStudioSystem->update();
@@ -236,3 +237,26 @@ void CC_SetGlobalParameter(const CCommand &args) {
 }
 
 static ConCommand setGlobalParameter("fmod_setglobalparameter", CC_SetGlobalParameter, "FMOD: Set a global parameter");
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Game Event Listener responding to FMOD server/client events
+//-----------------------------------------------------------------------------
+class CFMODEventListener : public IGameEventListener2 {
+    CFMODEventListener() {
+        gameeventmanager->AddListener(this, "fmod_loadbank", false);
+        gameeventmanager->AddListener(this, "fmod_startevent", false);
+        gameeventmanager->AddListener(this, "fmod_setglobalparameter", false);
+    }
+
+    void FireGameEvent(IGameEvent *pEvent) {
+		Msg("Receiving event %s", pEvent->GetName());
+        if (!Q_strcmp("fmod_loadbank", pEvent->GetName())) {
+            CFMODManager::LoadBank(pEvent->GetString("bankname"));
+        } else if (!Q_strcmp("fmod_startevent", pEvent->GetName())) {
+            CFMODManager::StartEvent(pEvent->GetString("eventpath"));
+        } else if (!Q_strcmp("fmod_setglobalparameter", pEvent->GetName())) {
+            CFMODManager::SetGlobalParameter(pEvent->GetString("parametername"), pEvent->GetFloat("value"));
+        }
+    }
+};

@@ -39,6 +39,11 @@ public:
     CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSystem") {
     }
 
+    virtual bool Init() {
+        gameeventmanager->LoadEventsFromFile("resource/fmod_events.res");
+        return true;
+    }
+
     virtual void LevelInitPreEntity() {
         CalculateAdaptiveMusicState();
     }
@@ -66,13 +71,36 @@ public:
 
     void ParseKeyValue(KeyValues *keyValue) {
         const char *keyValueName = keyValue->GetName();
-        Msg("Parsing the KeyValue '%s'\n", keyValueName);
-        KeyValues *element = keyValue->GetFirstSubKey();
-        while (element) {
-            const char *elementKey = element->GetName();
-            const char *elementValue = element->GetString();
-            Msg("%s : %s\n", elementKey, elementValue);
-            element = element->GetNextKey();
+        Log("FMOD Adaptive Music - Parsing the KeyValue '%s'\n", keyValueName);
+        if (!Q_strcmp(keyValueName, "globals")) { // The key-value element is defining the global parameters of the map
+            KeyValues *element = keyValue->GetFirstSubKey();
+            while (element) {
+                const char *elementKey = element->GetName();
+                const char *elementValue = element->GetString();
+                Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
+                if (!Q_strcmp(elementKey, "bank")) {
+                    IGameEvent *pEvent = gameeventmanager->CreateEvent("fmod_loadbank");
+                    if (pEvent) {
+                        pEvent->SetString("bankname", elementValue);
+                        gameeventmanager->FireEvent(pEvent);
+                    }
+                } else if (!Q_strcmp(elementKey, "event")) {
+                    IGameEvent *pEvent = gameeventmanager->CreateEvent("fmod_startevent");
+                    if (pEvent) {
+                        pEvent->SetString("eventpath", elementValue);
+                        gameeventmanager->FireEvent(pEvent);
+                    }
+                }
+                element = element->GetNextKey();
+            }
+        } else if (!Q_strcmp(keyValueName, "watcher")) { // The key-value element is defining a watcher and its params for the map
+            KeyValues *element = keyValue->GetFirstSubKey();
+            while (element) {
+                const char *elementKey = element->GetName();
+                const char *elementValue = element->GetString();
+                Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
+                element = element->GetNextKey();
+            }
         }
     }
 
