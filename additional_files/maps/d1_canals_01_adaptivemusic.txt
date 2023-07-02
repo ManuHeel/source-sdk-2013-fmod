@@ -1,0 +1,13 @@
+"adaptive_music"
+{
+	"globals"
+	{
+		"bank" "master"
+		"event" "music"
+	}
+	"watcher"
+	{
+		"type" "patate"
+		"truc" "muche"
+	}
+}
