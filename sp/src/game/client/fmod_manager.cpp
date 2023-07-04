@@ -3,6 +3,7 @@
 #include "fmod_studio.hpp"
 #include "fmod_errors.h"
 #include "convar.h"
+#include "usermessages.h"
 
 using namespace FMOD;
 
@@ -48,75 +49,6 @@ const char *concatenate(const char *str1, const char *str2) {
     return result;
 }
 //// END HELPER FUNCTIONS
-
-//-----------------------------------------------------------------------------
-// Purpose: Start the FMOD Studio System and initialize it
-// Output: The error code (or 0 if no error was encountered)
-//-----------------------------------------------------------------------------
-int CFMODManager::StartEngine() {
-    Msg("Starting FMOD Engine\n");
-    FMOD_RESULT result;
-    result = FMOD::Studio::System::create(&fmodStudioSystem);
-    if (result != FMOD_OK) {
-        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
-        return (-1);
-    }
-    result = fmodStudioSystem->initialize(512, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr);
-    if (result != FMOD_OK) {
-        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
-        return (-1);
-    }
-    Log("FMOD Engine successfully started\n");
-    return (0);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Stop the FMOD Studio System
-// Output: The error code (or 0 if no error was encountered)
-//-----------------------------------------------------------------------------
-int CFMODManager::StopEngine() {
-    Msg("Stopping FMOD Engine\n");
-    FMOD_RESULT result;
-    result = fmodStudioSystem->release();
-    if (result != FMOD_OK) {
-        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
-        return (-1);
-    }
-    Log("FMOD Engine successfully stopped\n");
-    return (0);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Sanitize the name of an FMOD Bank, adding ".bank" if it's not already present
-// Input: The FMOD Bank name to sanitize
-// Output: The sanitized Bank name (same as the initial if it was already ending with ".bank")
-//-----------------------------------------------------------------------------
-const char *SanitizeBankName(const char *bankName) {
-    const char *bankExtension = ".bank";
-    size_t bankNameLength = strlen(bankName);
-    size_t bankExtensionLength = strlen(bankExtension);
-    if (bankNameLength >= bankExtensionLength && strcmp(bankName + bankNameLength - bankExtensionLength, bankExtension) == 0) {
-        return bankName;
-    }
-    return concatenate(bankName, bankExtension);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Get the path of a Bank file in the /sound/fmod/banks folder
-// Input: The FMOD Bank name to locate
-// Output: The FMOD Bank's full path from the file system
-//-----------------------------------------------------------------------------
-const char *CFMODManager::GetBankPath(const char *bankName) {
-    const char *sanitizedBankName = SanitizeBankName(bankName);
-    char *bankPath = new char[512];
-    Q_snprintf(bankPath, 512, "%s/sound/fmod/banks/%s", engine->GetGameDirectory(), sanitizedBankName);
-    // convert backwards slashes to forward slashes
-    for (int i = 0; i < 512; i++) {
-        if (bankPath[i] == '\\')
-            bankPath[i] = '/';
-    }
-    return bankPath;
-}
 
 //-----------------------------------------------------------------------------
 // Purpose: Provide a console command to print the FMOD Engine Status
@@ -167,6 +99,16 @@ void CC_LoadBank(const CCommand &args) {
 }
 
 static ConCommand loadBank("fmod_loadbank", CC_LoadBank, "FMOD: Load a bank");
+
+//-----------------------------------------------------------------------------
+// Purpose: Provide a UserMessage handler to load a FMOD Bank
+// Input: The name of the FMOD Bank to load as ConCommand argument
+//-----------------------------------------------------------------------------
+void __MsgFunc_LoadBank(bf_read &msg ) {
+    char szString[256];
+    msg.ReadString( szString, sizeof(szString) );
+    CFMODManager::LoadBank(szString);
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Start an FMOD Event
@@ -240,8 +182,84 @@ static ConCommand setGlobalParameter("fmod_setglobalparameter", CC_SetGlobalPara
 
 
 //-----------------------------------------------------------------------------
+// Purpose: Start the FMOD Studio System and initialize it
+// Output: The error code (or 0 if no error was encountered)
+//-----------------------------------------------------------------------------
+int CFMODManager::StartEngine() {
+    Msg("Starting FMOD Engine\n");
+    FMOD_RESULT result;
+    result = FMOD::Studio::System::create(&fmodStudioSystem);
+    if (result != FMOD_OK) {
+        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
+        return (-1);
+    }
+    result = fmodStudioSystem->initialize(512, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr);
+    if (result != FMOD_OK) {
+        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
+        return (-1);
+    }
+    Log("FMOD Engine successfully started\n");
+    return (0);
+
+    // Handle the usermessages
+    usermessages->HookMessage( "FMODLoadBank", __MsgFunc_LoadBank );
+    //usermessages->HookMessage( "FMODStartEvent", __MsgFunc_StartEvent );
+    //usermessages->HookMessage( "FMODSetGlobalParameter", __MsgFunc_SetGlobalParameter );
+
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Stop the FMOD Studio System
+// Output: The error code (or 0 if no error was encountered)
+//-----------------------------------------------------------------------------
+int CFMODManager::StopEngine() {
+    Msg("Stopping FMOD Engine\n");
+    FMOD_RESULT result;
+    result = fmodStudioSystem->release();
+    if (result != FMOD_OK) {
+        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
+        return (-1);
+    }
+    Log("FMOD Engine successfully stopped\n");
+    return (0);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Sanitize the name of an FMOD Bank, adding ".bank" if it's not already present
+// Input: The FMOD Bank name to sanitize
+// Output: The sanitized Bank name (same as the initial if it was already ending with ".bank")
+//-----------------------------------------------------------------------------
+const char *SanitizeBankName(const char *bankName) {
+    const char *bankExtension = ".bank";
+    size_t bankNameLength = strlen(bankName);
+    size_t bankExtensionLength = strlen(bankExtension);
+    if (bankNameLength >= bankExtensionLength && strcmp(bankName + bankNameLength - bankExtensionLength, bankExtension) == 0) {
+        return bankName;
+    }
+    return concatenate(bankName, bankExtension);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Get the path of a Bank file in the /sound/fmod/banks folder
+// Input: The FMOD Bank name to locate
+// Output: The FMOD Bank's full path from the file system
+//-----------------------------------------------------------------------------
+const char *CFMODManager::GetBankPath(const char *bankName) {
+    const char *sanitizedBankName = SanitizeBankName(bankName);
+    char *bankPath = new char[512];
+    Q_snprintf(bankPath, 512, "%s/sound/fmod/banks/%s", engine->GetGameDirectory(), sanitizedBankName);
+    // convert backwards slashes to forward slashes
+    for (int i = 0; i < 512; i++) {
+        if (bankPath[i] == '\\')
+            bankPath[i] = '/';
+    }
+    return bankPath;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Game Event Listener responding to FMOD server/client events
 //-----------------------------------------------------------------------------
+/*
 class CFMODEventListener : public IGameEventListener2 {
     CFMODEventListener() {
         gameeventmanager->AddListener(this, "fmod_loadbank", false);
@@ -260,3 +278,4 @@ class CFMODEventListener : public IGameEventListener2 {
         }
     }
 };
+ */

@@ -31,16 +31,48 @@
 ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE, "Automatically set by the game when an adaptive music file is available for the current map.");
 
 //-----------------------------------------------------------------------------
+// Purpose: In multiplayer, always return player 1
+//-----------------------------------------------------------------------------
+CBasePlayer *GetAdaptiveMusicPlayer(void) {
+    CBasePlayer *pPlayer;
+
+    if (gpGlobals->maxClients <= 1) {
+        pPlayer = UTIL_GetLocalPlayer();
+    } else {
+        // only respond to the first player
+        pPlayer = UTIL_PlayerByIndex(1);
+    }
+
+    return pPlayer;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Game system to kickstart the adaptive music
 //-----------------------------------------------------------------------------
 class CAdaptiveMusicSystem : public CAutoGameSystem {
+
+    class CFMODEventListener : public IGameEventListener2 {
+    public:
+        CFMODEventListener() {
+            gameeventmanager->AddListener(this, "player_spawn", true);
+        }
+
+        virtual void FireGameEvent(IGameEvent *pEvent) {
+            if (Q_strcmp(pEvent->GetName(), "player_spawn") == 0) {
+                g_AdaptiveMusicSystem.InitAdaptiveMusic();
+            }
+        }
+    };
+
+    CFMODEventListener *pFMODEventListener;
+    CFMODEventListener &gFMODEventListener = *pFMODEventListener;
+
 public:
 
     CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSystem") {
     }
 
     virtual bool Init() {
-        gameeventmanager->LoadEventsFromFile("resource/fmod_events.res");
         return true;
     }
 
@@ -49,7 +81,11 @@ public:
     }
 
     virtual void LevelInitPostEntity() {
-        InitAdaptiveMusic();
+        Msg("Start FMOD event listener");
+        pFMODEventListener = new CFMODEventListener();
+        gFMODEventListener = *pFMODEventListener;
+        // Don't init right away but wait for the player to be spawned
+        // InitAdaptiveMusic();
     }
 
     virtual void LevelShutdownPreEntity() {
@@ -79,17 +115,27 @@ public:
                 const char *elementValue = element->GetString();
                 Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
                 if (!Q_strcmp(elementKey, "bank")) {
+                    CBasePlayer *pBasePlayer = GetAdaptiveMusicPlayer();
+                    CSingleUserRecipientFilter filter(pBasePlayer); // set recipient
+                    filter.MakeReliable();  // reliable transmission
+                    UserMessageBegin(filter, "FMODLoadBank"); // create message
+                    WRITE_STRING(elementValue);
+                    MessageEnd(); //send message
+                    /*
                     IGameEvent *pEvent = gameeventmanager->CreateEvent("fmod_loadbank");
                     if (pEvent) {
                         pEvent->SetString("bankname", elementValue);
                         gameeventmanager->FireEvent(pEvent);
                     }
+                     */
                 } else if (!Q_strcmp(elementKey, "event")) {
+                    /*
                     IGameEvent *pEvent = gameeventmanager->CreateEvent("fmod_startevent");
                     if (pEvent) {
                         pEvent->SetString("eventpath", elementValue);
                         gameeventmanager->FireEvent(pEvent);
                     }
+                     */
                 }
                 element = element->GetNextKey();
             }
