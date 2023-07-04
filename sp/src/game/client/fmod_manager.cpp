@@ -6,24 +6,6 @@
 
 using namespace FMOD;
 
-CFMODManager gFMODManager;
-
-Studio::System *fmodStudioSystem;
-Studio::Bank *fmodStudioBank;
-Studio::Bank *fmodStudioStringsBank;
-Studio::EventDescription *fmodStudioEventDescription;
-Studio::EventInstance *fmodStudioEventInstance;
-
-CFMODManager *FMODManager() {
-    return &gFMODManager;
-}
-
-CFMODManager::CFMODManager()
-= default;
-
-CFMODManager::~CFMODManager()
-= default;
-
 //// HELPER FUNCTIONS
 //-----------------------------------------------------------------------------
 // Purpose: Concatenate 2 strings together
@@ -49,6 +31,52 @@ const char *concatenate(const char *str1, const char *str2) {
 }
 //// END HELPER FUNCTIONS
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Game Event Listener responding to FMOD server/client events
+//-----------------------------------------------------------------------------
+class CFMODEventListener : public IGameEventListener2 {
+
+    void FireGameEvent(IGameEvent *pEvent) override {
+        Msg("Receiving event %s", pEvent->GetName());
+        if (!Q_strcmp("fmod_loadbank", pEvent->GetName())) {
+            CFMODManager::LoadBank(pEvent->GetString("bankname"));
+        } else if (!Q_strcmp("fmod_startevent", pEvent->GetName())) {
+            CFMODManager::StartEvent(pEvent->GetString("eventpath"));
+        } else if (!Q_strcmp("fmod_setglobalparameter", pEvent->GetName())) {
+            CFMODManager::SetGlobalParameter(pEvent->GetString("parametername"), pEvent->GetFloat("value"));
+        }
+    }
+
+public:
+    CFMODEventListener() {
+        gameeventmanager->AddListener(this, "fmod_loadbank", false);
+        gameeventmanager->AddListener(this, "fmod_startevent", false);
+        gameeventmanager->AddListener(this, "fmod_setglobalparameter", false);
+    }
+};
+
+CFMODManager gFMODManager;
+
+CFMODEventListener *pFMODEventListener;
+CFMODEventListener& gFMODEventListener = *pFMODEventListener;
+
+Studio::System *fmodStudioSystem;
+Studio::Bank *fmodStudioBank;
+Studio::Bank *fmodStudioStringsBank;
+Studio::EventDescription *fmodStudioEventDescription;
+Studio::EventInstance *fmodStudioEventInstance;
+
+CFMODManager *FMODManager() {
+    return &gFMODManager;
+}
+
+CFMODManager::CFMODManager()
+= default;
+
+CFMODManager::~CFMODManager()
+= default;
+
 //-----------------------------------------------------------------------------
 // Purpose: Start the FMOD Studio System and initialize it
 // Output: The error code (or 0 if no error was encountered)
@@ -67,6 +95,9 @@ int CFMODManager::StartEngine() {
         return (-1);
     }
     Log("FMOD Engine successfully started\n");
+    Msg("Start FMOD event listener");
+    pFMODEventListener = new CFMODEventListener();
+    gFMODEventListener = *pFMODEventListener;
     return (0);
 }
 
@@ -237,26 +268,3 @@ void CC_SetGlobalParameter(const CCommand &args) {
 }
 
 static ConCommand setGlobalParameter("fmod_setglobalparameter", CC_SetGlobalParameter, "FMOD: Set a global parameter");
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Game Event Listener responding to FMOD server/client events
-//-----------------------------------------------------------------------------
-class CFMODEventListener : public IGameEventListener2 {
-    CFMODEventListener() {
-        gameeventmanager->AddListener(this, "fmod_loadbank", false);
-        gameeventmanager->AddListener(this, "fmod_startevent", false);
-        gameeventmanager->AddListener(this, "fmod_setglobalparameter", false);
-    }
-
-    void FireGameEvent(IGameEvent *pEvent) {
-		Msg("Receiving event %s", pEvent->GetName());
-        if (!Q_strcmp("fmod_loadbank", pEvent->GetName())) {
-            CFMODManager::LoadBank(pEvent->GetString("bankname"));
-        } else if (!Q_strcmp("fmod_startevent", pEvent->GetName())) {
-            CFMODManager::StartEvent(pEvent->GetString("eventpath"));
-        } else if (!Q_strcmp("fmod_setglobalparameter", pEvent->GetName())) {
-            CFMODManager::SetGlobalParameter(pEvent->GetString("parametername"), pEvent->GetFloat("value"));
-        }
-    }
-};
