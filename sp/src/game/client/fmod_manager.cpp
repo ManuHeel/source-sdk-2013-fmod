@@ -102,11 +102,11 @@ static ConCommand loadBank("fmod_loadbank", CC_LoadBank, "FMOD: Load a bank");
 
 //-----------------------------------------------------------------------------
 // Purpose: Provide a UserMessage handler to load a FMOD Bank
-// Input: The name of the FMOD Bank to load as ConCommand argument
+// Input: The name of the FMOD Bank to load
 //-----------------------------------------------------------------------------
-void __MsgFunc_LoadBank(bf_read &msg ) {
+void MsgFunc_LoadBank(bf_read &msg) {
     char szString[256];
-    msg.ReadString( szString, sizeof(szString) );
+    msg.ReadString(szString, sizeof(szString));
     CFMODManager::LoadBank(szString);
 }
 
@@ -145,6 +145,16 @@ void CC_StartEvent(const CCommand &args) {
 static ConCommand startEvent("fmod_startevent", CC_StartEvent, "FMOD: Start an event");
 
 //-----------------------------------------------------------------------------
+// Purpose: Provide a UserMessage handler to start an FMOD Event
+// Input: The name of the FMOD Event to load
+//-----------------------------------------------------------------------------
+void MsgFunc_StartEvent(bf_read &msg) {
+    char szString[256];
+    msg.ReadString(szString, sizeof(szString));
+    CFMODManager::StartEvent(szString);
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Set the value for a global FMOD Parameter
 // Input:
 // - parameterName: The name of the FMOD Parameter to set
@@ -165,7 +175,7 @@ int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Provide a console command to the value for a global FMOD Parameter
+// Purpose: Provide a console command to set the value for a global FMOD Parameter
 // Input:
 // - Arg(1): The name of the FMOD Parameter to set (to load as ConCommand argument)
 // - Arg(2): The value to set the FMOD Parameter to (to load as ConCommand argument)
@@ -180,6 +190,19 @@ void CC_SetGlobalParameter(const CCommand &args) {
 
 static ConCommand setGlobalParameter("fmod_setglobalparameter", CC_SetGlobalParameter, "FMOD: Set a global parameter");
 
+//-----------------------------------------------------------------------------
+// Purpose: Provide a UserMessage handler to set the value for a global FMOD Parameter
+// Input:
+// - The name of the FMOD Parameter to set (to load as ConCommand argument)
+// - The value to set the FMOD Parameter to (to load as ConCommand argument)
+//-----------------------------------------------------------------------------
+void MsgFunc_SetGlobalParameter(bf_read &msg) {
+    char szString[256];
+    msg.ReadString(szString, sizeof(szString));
+    float szFloat;
+    szFloat = msg.ReadFloat();
+    CFMODManager::SetGlobalParameter(szString, szFloat);
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Start the FMOD Studio System and initialize it
@@ -199,12 +222,13 @@ int CFMODManager::StartEngine() {
         return (-1);
     }
     Log("FMOD Engine successfully started\n");
-    return (0);
 
     // Handle the usermessages
-    usermessages->HookMessage( "FMODLoadBank", __MsgFunc_LoadBank );
-    //usermessages->HookMessage( "FMODStartEvent", __MsgFunc_StartEvent );
-    //usermessages->HookMessage( "FMODSetGlobalParameter", __MsgFunc_SetGlobalParameter );
+    usermessages->HookMessage("FMODLoadBank", MsgFunc_LoadBank);
+    usermessages->HookMessage("FMODStartEvent", MsgFunc_StartEvent);
+    usermessages->HookMessage("FMODSetGlobalParameter", MsgFunc_SetGlobalParameter);
+
+    return (0);
 
 }
 
@@ -255,27 +279,3 @@ const char *CFMODManager::GetBankPath(const char *bankName) {
     }
     return bankPath;
 }
-
-//-----------------------------------------------------------------------------
-// Purpose: Game Event Listener responding to FMOD server/client events
-//-----------------------------------------------------------------------------
-/*
-class CFMODEventListener : public IGameEventListener2 {
-    CFMODEventListener() {
-        gameeventmanager->AddListener(this, "fmod_loadbank", false);
-        gameeventmanager->AddListener(this, "fmod_startevent", false);
-        gameeventmanager->AddListener(this, "fmod_setglobalparameter", false);
-    }
-
-    void FireGameEvent(IGameEvent *pEvent) {
-		Msg("Receiving event %s", pEvent->GetName());
-        if (!Q_strcmp("fmod_loadbank", pEvent->GetName())) {
-            CFMODManager::LoadBank(pEvent->GetString("bankname"));
-        } else if (!Q_strcmp("fmod_startevent", pEvent->GetName())) {
-            CFMODManager::StartEvent(pEvent->GetString("eventpath"));
-        } else if (!Q_strcmp("fmod_setglobalparameter", pEvent->GetName())) {
-            CFMODManager::SetGlobalParameter(pEvent->GetString("parametername"), pEvent->GetFloat("value"));
-        }
-    }
-};
- */

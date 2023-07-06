@@ -47,9 +47,9 @@ void RegisterUserMessages( void )
 	usermessages->Register( "UpdateJalopyRadar", -1 );
 
     // FMOD Adaptive Music System
-    usermessages->Register( "FMODLoadBank", -1 );
-    usermessages->Register( "FMODStartEvent", -1 );
-    usermessages->Register( "FMODSetGlobalParameter", -1 );
+    usermessages->Register("FMODLoadBank", -1);
+    usermessages->Register("FMODStartEvent", -1);
+    usermessages->Register("FMODSetGlobalParameter", -1);
 
 #ifndef _X360
 	// NVNT register haptic user messages
