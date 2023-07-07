@@ -53,7 +53,9 @@ public:
     // Input: The fired GameEvent
     //-----------------------------------------------------------------------------
     virtual void FireGameEvent(IGameEvent *pEvent) {
+        // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
         if (Q_strcmp(pEvent->GetName(), "player_spawn") == 0) {
+            Msg("FMOD Adaptive Music - Player spawned, initializing Adaptive Music");
             pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
             pAdaptiveMusicSystem->InitAdaptiveMusic();
         }
@@ -92,10 +94,15 @@ void CAdaptiveMusicSystem::LevelInitPreEntity() {
 // Tries to initialize the adaptive music if the player has been found
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::LevelInitPostEntity() {
-    // Init only when the player has already been found (map change)
+    // When loading a map, try to find an existing player (map change) and init the AdaptiveMusic
+	Msg("FMOD Adaptive Music - Level loaded, trying to find the player");
+	pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
     if (pAdaptiveMusicPlayer != NULL) {
+        Msg("FMOD Adaptive Music - Player found, starting Adaptive Music");
         InitAdaptiveMusic();
     }
+    // If the player has not been set, this is probably the game starting
+    // and the AdaptiveMusic will init when the player first spawned (GameEvent)
 }
 
 //-----------------------------------------------------------------------------
