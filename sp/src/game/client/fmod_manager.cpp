@@ -56,9 +56,9 @@ const char *concatenate(const char *str1, const char *str2) {
 void CC_GetStatus() {
     bool isValid = fmodStudioSystem->isValid();
     if (isValid) {
-        Msg("FMOD Manager is currently running\n");
+        Msg("FMOD Client - Engine is currently running\n");
     } else {
-        Msg("FMOD Manager is not running\n");
+        Msg("FMOD Client - Engine is not running\n");
     }
 }
 
@@ -73,16 +73,16 @@ int CFMODManager::LoadBank(const char *bankName) {
     FMOD_RESULT result;
     result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankName), FMOD_STUDIO_LOAD_BANK_NORMAL, &fmodStudioBank);
     if (result != FMOD_OK) {
-        Warning("Could not load FMOD bank (%s). Error: (%d) %s\n", bankName, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not load Bank (%s). Error: (%d) %s\n", bankName, result, FMOD_ErrorString(result));
         return (-1);
     }
     const char *bankStringsName = concatenate(bankName, ".strings");
     result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankStringsName), FMOD_STUDIO_LOAD_BANK_NORMAL, &fmodStudioStringsBank);
     if (result != FMOD_OK) {
-        Warning("Could not load FMOD strings bank (%s). Error: (%d) %s\n", bankStringsName, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not load Strings Bank (%s). Error: (%d) %s\n", bankStringsName, result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD bank successfully loaded (%s)\n", bankName);
+    Log("FMOD Client - Bank successfully loaded (%s)\n", bankName);
     return (0);
 }
 
@@ -123,10 +123,10 @@ int CFMODManager::StartEvent(const char *eventPath) {
     result = fmodStudioEventInstance->start();
     fmodStudioSystem->update();
     if (result != FMOD_OK) {
-        Warning("Could not start FMOD event (%s). Error: (%d) %s\n", eventPath, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not start Event (%s). Error: (%d) %s\n", eventPath, result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD event successfully started (%s)\n", eventPath);
+    Log("FMOD Client - Event successfully started (%s)\n", eventPath);
     return (0);
 }
 
@@ -167,10 +167,10 @@ int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {
     result = fmodStudioSystem->setParameterByName(parameterName, value);
     fmodStudioSystem->update();
     if (result != FMOD_OK) {
-        Warning("Could not set FMOD global parameter value (%s) (%f). Error: (%d) %s\n", parameterName, value, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not set Global Parameter value (%s) (%f). Error: (%d) %s\n", parameterName, value, result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD parameter successfully set (%s) (%f)\n", parameterName, value);
+    Log("FMOD Client - Global Parameter successfully set (%s) (%f)\n", parameterName, value);
     return (0);
 }
 
@@ -209,24 +209,29 @@ void MsgFunc_SetGlobalParameter(bf_read &msg) {
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::StartEngine() {
-    Msg("Starting FMOD Engine\n");
+
+    // Startup FMOD Studio System
+    Msg("FMOD Client - Starting Engine\n");
     FMOD_RESULT result;
     result = FMOD::Studio::System::create(&fmodStudioSystem);
     if (result != FMOD_OK) {
-        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
+        Error("FMOD Client - Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
         return (-1);
     }
     result = fmodStudioSystem->initialize(512, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr);
     if (result != FMOD_OK) {
-        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
+        Error("FMOD Client - Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD Engine successfully started\n");
+    Log("FMOD Client - Engine successfully started\n");
 
-    // Handle the usermessages
+    // Handle the usermessages (registered in hl2_usermessages.cpp)
+    Log("FMOD Client - Hooking up the UserMessages\n");
     usermessages->HookMessage("FMODLoadBank", MsgFunc_LoadBank);
     usermessages->HookMessage("FMODStartEvent", MsgFunc_StartEvent);
+    usermessages->HookMessage("FMODStopEvent", MsgFunc_StartEvent);
     usermessages->HookMessage("FMODSetGlobalParameter", MsgFunc_SetGlobalParameter);
+    Log("FMOD Client - Successfully hooked up the UserMessages\n");
 
     return (0);
 
@@ -237,14 +242,14 @@ int CFMODManager::StartEngine() {
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::StopEngine() {
-    Msg("Stopping FMOD Engine\n");
+    Msg("FMOD Client - Stopping Engine\n");
     FMOD_RESULT result;
     result = fmodStudioSystem->release();
     if (result != FMOD_OK) {
-        Error("FMOD Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
+        Error("FMOD Client - Engine error! (%d) %s\n", result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD Engine successfully stopped\n");
+    Log("FMOD Client - Engine successfully stopped\n");
     return (0);
 }
 
