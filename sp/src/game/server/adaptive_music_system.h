@@ -9,6 +9,10 @@
 
 class CAdaptiveMusicSystem : public CAutoGameSystem {
 
+private:
+    const char *loadedBankName;
+    const char *startedEventPath;
+
 public:
 
     CAdaptiveMusicSystem();
@@ -20,6 +24,8 @@ public:
     virtual void LevelInitPostEntity();
 
     virtual void LevelShutdownPreEntity();
+
+    virtual void Shutdown();
 
     // Set the available ConVar if we can find adaptive music data for this level
     void CalculateAdaptiveMusicState();

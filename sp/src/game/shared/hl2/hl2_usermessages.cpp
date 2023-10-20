@@ -48,6 +48,7 @@ void RegisterUserMessages( void )
 
     // FMOD Adaptive Music System user messages
     usermessages->Register("FMODLoadBank", -1); // Load an FMOD Bank (bankname)
+    usermessages->Register("FMODUnloadBank", -1); // Unload an FMOD Bank (bankname)
     usermessages->Register("FMODStartEvent", -1); // Start an FMOD Event (eventpath)
     usermessages->Register("FMODStopEvent", -1); // Stop an FMOD Event (eventpath)
     usermessages->Register("FMODSetGlobalParameter", -1); // Set an FMOD Global Parameter (paramname, paramvalue)
