@@ -55,7 +55,7 @@ public:
     virtual void FireGameEvent(IGameEvent *pEvent) {
         // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
         if (Q_strcmp(pEvent->GetName(), "player_spawn") == 0) {
-            Msg("FMOD Adaptive Music - Player spawned, initializing Adaptive Music");
+            Msg("FMOD Adaptive Music - Player spawned, initializing Adaptive Music\n");
             pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
             pAdaptiveMusicSystem->InitAdaptiveMusic();
         }
@@ -68,6 +68,9 @@ public:
 
 CFMODEventListener *pFMODEventListener;
 
+const char *loadedBankName;
+const char *startedEventPath;
+
 CAdaptiveMusicSystem::CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSystem") {
 }
 
@@ -76,7 +79,7 @@ CAdaptiveMusicSystem::CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSy
 // Starts the event listener
 //-----------------------------------------------------------------------------
 bool CAdaptiveMusicSystem::Init() {
-    Msg("FMOD Adaptive Music - Start FMOD event listener");
+    Msg("FMOD Adaptive Music - Start FMOD event listener\n");
     pFMODEventListener = new CFMODEventListener(this);
     return true;
 }
@@ -95,10 +98,10 @@ void CAdaptiveMusicSystem::LevelInitPreEntity() {
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::LevelInitPostEntity() {
     // When loading a map, try to find an existing player (map change) and init the AdaptiveMusic
-	Msg("FMOD Adaptive Music - Level loaded, trying to find the player");
-	pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
+    Msg("FMOD Adaptive Music - Level loaded, trying to find the player\n");
+    pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
     if (pAdaptiveMusicPlayer != NULL) {
-        Msg("FMOD Adaptive Music - Player found, starting Adaptive Music");
+        Msg("FMOD Adaptive Music - Player found, starting Adaptive Music\n");
         InitAdaptiveMusic();
     }
     // If the player has not been set, this is probably the game starting
@@ -110,6 +113,9 @@ void CAdaptiveMusicSystem::LevelInitPostEntity() {
 // Stops the adaptive music for the level
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::LevelShutdownPreEntity() {
+    ShutDownAdaptiveMusic();
+}
+void CAdaptiveMusicSystem::Shutdown() {
     ShutDownAdaptiveMusic();
 }
 
@@ -131,7 +137,7 @@ void CAdaptiveMusicSystem::CalculateAdaptiveMusicState() {
 
 //-----------------------------------------------------------------------------
 // Purpose: Parses the provided KeyValue containing adaptive music data from a file
-// Input: A KeyValue object, subset of a adaptive music file
+// Input: A KeyValue object, subset of an adaptive music file
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
     const char *keyValueName = keyValue->GetName();
@@ -143,12 +149,16 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             const char *elementValue = element->GetString();
             Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
             if (!Q_strcmp(elementKey, "bank")) {
+                loadedBankName = elementValue;
+                // Send a FMODLoadBank UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
                 filter.MakeReliable();
                 UserMessageBegin(filter, "FMODLoadBank");
                 WRITE_STRING(elementValue);
                 MessageEnd();
             } else if (!Q_strcmp(elementKey, "event")) {
+                startedEventPath = elementValue;
+                // Send a FMODStartEvent UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
                 filter.MakeReliable();
                 UserMessageBegin(filter, "FMODStartEvent");
@@ -193,10 +203,19 @@ void CAdaptiveMusicSystem::InitAdaptiveMusic() {
 
 //-----------------------------------------------------------------------------
 // Purpose: Shuts down the adaptive music for the map
-// TODO : Stop the events (or not, if we want to have music on loading times)
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::ShutDownAdaptiveMusic() {
     Msg("FMOD Adaptive Music - Shutting down adaptive music for the map\n");
+	pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
+	if (pAdaptiveMusicPlayer != NULL && startedEventPath != NULL) {
+		// Sending usermessage
+		CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+		filter.MakeReliable();
+		// Stopping event
+		UserMessageBegin(filter, "FMODStopEvent");
+		WRITE_STRING(startedEventPath);
+		MessageEnd();
+	}
 }
 
 CAdaptiveMusicSystem g_AdaptiveMusicSystem;
