@@ -137,7 +137,7 @@ void CAdaptiveMusicSystem::CalculateAdaptiveMusicState() {
 
 //-----------------------------------------------------------------------------
 // Purpose: Parses the provided KeyValue containing adaptive music data from a file
-// Input: A KeyValue object, subset of a adaptive music file
+// Input: A KeyValue object, subset of an adaptive music file
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
     const char *keyValueName = keyValue->GetName();
@@ -150,6 +150,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
             if (!Q_strcmp(elementKey, "bank")) {
                 loadedBankName = elementValue;
+                // Send a FMODLoadBank UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
                 filter.MakeReliable();
                 UserMessageBegin(filter, "FMODLoadBank");
@@ -157,6 +158,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 MessageEnd();
             } else if (!Q_strcmp(elementKey, "event")) {
                 startedEventPath = elementValue;
+                // Send a FMODStartEvent UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
                 filter.MakeReliable();
                 UserMessageBegin(filter, "FMODStartEvent");
