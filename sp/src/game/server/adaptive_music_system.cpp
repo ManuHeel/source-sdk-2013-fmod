@@ -115,6 +115,7 @@ void CAdaptiveMusicSystem::LevelInitPostEntity() {
 void CAdaptiveMusicSystem::LevelShutdownPreEntity() {
     ShutDownAdaptiveMusic();
 }
+
 void CAdaptiveMusicSystem::Shutdown() {
     ShutDownAdaptiveMusic();
 }
@@ -150,6 +151,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
             if (!Q_strcmp(elementKey, "bank")) {
                 loadedBankName = elementValue;
+                Log("FMOD Adaptive Music - Telling the FMOD Client to load the bank '%s'\n", loadedBankName);
                 // Send a FMODLoadBank UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
                 filter.MakeReliable();
@@ -158,6 +160,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 MessageEnd();
             } else if (!Q_strcmp(elementKey, "event")) {
                 startedEventPath = elementValue;
+                Log("FMOD Adaptive Music - Telling the FMOD Client to start the event '%s'\n", startedEventPath);
                 // Send a FMODStartEvent UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
                 filter.MakeReliable();
@@ -184,20 +187,27 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
 // Finds the adaptive music file, parse it and initialize everything related to AdaptiveMusic for this level
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::InitAdaptiveMusic() {
-    Msg("FMOD Adaptive Music - Initializing the map's adaptive music data\n");
-    // Find the adaptive music file
-    char szFullName[512];
-    Q_snprintf(szFullName, sizeof(szFullName), "maps/%s_adaptivemusic.txt", STRING(gpGlobals->mapname));
-    KeyValues *keyValue = new KeyValues("adaptive_music");
-    if (keyValue->LoadFromFile(filesystem, szFullName, "MOD")) {
-        Msg("FMOD Adaptive Music - Loading adaptive music data from '%s'\n", szFullName);
-        KeyValues *keyValueSubset = keyValue->GetFirstSubKey();
-        while (keyValueSubset) {
-            ParseKeyValue(keyValueSubset);
-            keyValueSubset = keyValueSubset->GetNextKey();
+    // If we know there's Adaptive Music data, initialize the Adaptive Music
+    if (adaptive_music_available.GetBool()) {
+        Msg("FMOD Adaptive Music - Initializing the map's adaptive music data\n");
+        // Find the adaptive music file
+        char szFullName[512];
+        Q_snprintf(szFullName, sizeof(szFullName), "maps/%s_adaptivemusic.txt", STRING(gpGlobals->mapname));
+        KeyValues *keyValue = new KeyValues("adaptive_music");
+        if (keyValue->LoadFromFile(filesystem, szFullName, "MOD")) {
+            Msg("FMOD Adaptive Music - Loading adaptive music data from '%s'\n", szFullName);
+            KeyValues *keyValueSubset = keyValue->GetFirstSubKey();
+            while (keyValueSubset) {
+                ParseKeyValue(keyValueSubset);
+                keyValueSubset = keyValueSubset->GetNextKey();
+            }
+        } else {
+            Msg("FMOD Adaptive Music - Could not load adaptive music file '%s'\n", szFullName);
         }
-    } else {
-        Msg("FMOD Adaptive Music - Could not load adaptive music file '%s'\n", szFullName);
+    }
+    // Else shutdown the Adaptive Music
+    else {
+        ShutDownAdaptiveMusic();
     }
 }
 
@@ -206,16 +216,16 @@ void CAdaptiveMusicSystem::InitAdaptiveMusic() {
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::ShutDownAdaptiveMusic() {
     Msg("FMOD Adaptive Music - Shutting down adaptive music for the map\n");
-	pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-	if (pAdaptiveMusicPlayer != NULL && startedEventPath != NULL) {
-		// Sending usermessage
-		CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
-		filter.MakeReliable();
-		// Stopping event
-		UserMessageBegin(filter, "FMODStopEvent");
-		WRITE_STRING(startedEventPath);
-		MessageEnd();
-	}
+    pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
+    if (pAdaptiveMusicPlayer != NULL && startedEventPath != NULL) {
+        Log("FMOD Adaptive Music - Telling the FMOD Client to stop the event '%s'\n", startedEventPath);
+        // Send a FMODStopEvent usermessage
+        CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+        filter.MakeReliable();
+        UserMessageBegin(filter, "FMODStopEvent");
+        WRITE_STRING(startedEventPath);
+        MessageEnd();
+    }
 }
 
 CAdaptiveMusicSystem g_AdaptiveMusicSystem;
