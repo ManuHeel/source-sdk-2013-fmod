@@ -1,5 +1,7 @@
 #include "cbase.h"
 #include "adaptive_music_system.h"
+#include "adaptive_music_watcher.h"
+#include "adaptive_music_healthwatcher.h"
 #include "tier0/icommandline.h"
 #include "igamesystem.h"
 #include "filesystem.h"
@@ -176,7 +178,14 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             const char *elementKey = element->GetName();
             const char *elementValue = element->GetString();
             Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
-            // TODO: Init the AdaptiveMusicWatcher according to the params
+            // DOING: Init the AdaptiveMusicWatcher according to the params
+            if (!Q_strcmp(elementKey, "type")) {
+                const char *watcherType = elementValue;
+                if (!Q_strcmp(watcherType, "health")) {
+                    Msg("FMOD Adaptive Music - Found a new HealthWatcher to create");
+                    CAdaptiveMusicHealthWatcher healthWatcher;
+                }
+            }
             element = element->GetNextKey();
         }
     }

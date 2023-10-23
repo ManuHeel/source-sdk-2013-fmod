@@ -5,6 +5,7 @@
 #endif
 
 #include "igamesystem.h"
+#include "cbase.h"
 #include <KeyValues.h>
 
 class CAdaptiveMusicSystem : public CAutoGameSystem {
