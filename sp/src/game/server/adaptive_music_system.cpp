@@ -1,7 +1,5 @@
 #include "cbase.h"
 #include "adaptive_music_system.h"
-#include "adaptive_music_watcher.h"
-#include "adaptive_music_healthwatcher.h"
 #include "tier0/icommandline.h"
 #include "igamesystem.h"
 #include "filesystem.h"
@@ -13,6 +11,47 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+//===========================================================================================================
+// ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
+//===========================================================================================================
+
+class CAdaptiveMusicWatcher : public CLogicalEntity {
+public:
+    DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
+    DECLARE_DATADESC();
+
+    CAdaptiveMusicWatcher() {
+        Msg("FMOD Watcher - Creating a new watcher\n");
+    }
+
+    void Spawn();
+    void Think();
+
+private:
+
+};
+
+LINK_ENTITY_TO_CLASS(my_logical_entity, CAdaptiveMusicWatcher);
+
+BEGIN_DATADESC(CAdaptiveMusicWatcher)
+                    DEFINE_THINKFUNC(Think)
+END_DATADESC()
+
+void CAdaptiveMusicWatcher::Spawn() {
+    CLogicalEntity::Spawn();
+    Log("FMOD Watcher - I'm spawning!\n");
+    Activate();
+    SetThink(&CAdaptiveMusicWatcher::Think);
+    // TODO: I'm completely unable to find a way to make the entity think on its own (I can make it think manually but it does not schedule a future think)
+}
+
+void CAdaptiveMusicWatcher::Think() {
+    CLogicalEntity::Think();
+    Log("FMOD Watcher - I'm watching!\n");
+    // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.2f);
+}
 
 //===========================================================================================================
 // ADAPTIVE MUSIC GAME SYSTEM
@@ -182,8 +221,10 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             if (!Q_strcmp(elementKey, "type")) {
                 const char *watcherType = elementValue;
                 if (!Q_strcmp(watcherType, "health")) {
-                    Msg("FMOD Adaptive Music - Found a new HealthWatcher to create");
-                    CAdaptiveMusicHealthWatcher healthWatcher;
+                    Msg("FMOD Adaptive Music - Found a new HealthWatcher to create\n");
+                    // For now, creating a default watcher
+                    CAdaptiveMusicWatcher *healthWatcher = new CAdaptiveMusicWatcher;
+                    healthWatcher->Spawn();
                 }
             }
             element = element->GetNextKey();
@@ -214,7 +255,7 @@ void CAdaptiveMusicSystem::InitAdaptiveMusic() {
             Msg("FMOD Adaptive Music - Could not load adaptive music file '%s'\n", szFullName);
         }
     }
-    // Else shutdown the Adaptive Music
+        // Else shutdown the Adaptive Music
     else {
         ShutDownAdaptiveMusic();
     }
