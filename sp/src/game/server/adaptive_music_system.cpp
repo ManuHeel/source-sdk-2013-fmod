@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "adaptive_music_system.h"
+#include "adaptive_music_watcher.h"
 #include "tier0/icommandline.h"
 #include "igamesystem.h"
 #include "filesystem.h"
@@ -12,65 +13,6 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-//===========================================================================================================
-// ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
-//===========================================================================================================
-
-class CAdaptiveMusicWatcher : public CLogicalEntity {
-
-private:
-    CAdaptiveMusicSystem *pAdaptiveMusicSystem;
-
-public:
-    DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
-    DECLARE_DATADESC();
-
-    explicit CAdaptiveMusicWatcher() = default;
-
-    void SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef);
-
-    void Spawn() override;
-
-    void WatchThink();
-
-private:
-
-};
-
-LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
-
-BEGIN_DATADESC(CAdaptiveMusicWatcher)
-                    DEFINE_THINKFUNC(WatchThink)
-END_DATADESC()
-
-void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
-    pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
-}
-
-void CAdaptiveMusicWatcher::Spawn() {
-    CLogicalEntity::Spawn();
-    Log("FMOD Watcher - Spawning\n");
-    SetThink(&CAdaptiveMusicWatcher::WatchThink);
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
-}
-
-void CAdaptiveMusicWatcher::WatchThink() {
-    CBasePlayer *player = pAdaptiveMusicSystem->pAdaptiveMusicPlayer;
-    if (player != nullptr) {
-        if (true) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
-            auto playerHealth = (float) player->GetHealth();
-            // Send a FMODSetGlobalParameter usermessage
-            CSingleUserRecipientFilter filter(player);
-            filter.MakeReliable();
-            UserMessageBegin(filter, "FMODSetGlobalParameter");
-            WRITE_STRING("health");
-            WRITE_FLOAT(playerHealth);
-            MessageEnd();
-        }
-    }
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
-}
 
 //===========================================================================================================
 // ADAPTIVE MUSIC GAME SYSTEM
