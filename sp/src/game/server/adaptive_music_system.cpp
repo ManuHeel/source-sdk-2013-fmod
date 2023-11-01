@@ -26,7 +26,8 @@ public:
     }
 
     void Spawn();
-    void Think();
+
+    void WatchThink();
 
 private:
 
@@ -35,22 +36,21 @@ private:
 LINK_ENTITY_TO_CLASS(my_logical_entity, CAdaptiveMusicWatcher);
 
 BEGIN_DATADESC(CAdaptiveMusicWatcher)
-                    DEFINE_THINKFUNC(Think)
+                    DEFINE_THINKFUNC(WatchThink)
 END_DATADESC()
 
 void CAdaptiveMusicWatcher::Spawn() {
     CLogicalEntity::Spawn();
     Log("FMOD Watcher - I'm spawning!\n");
-    Activate();
-    SetThink(&CAdaptiveMusicWatcher::Think);
+    SetThink(&CAdaptiveMusicWatcher::WatchThink);
+    SetNextThink(gpGlobals->curtime + 0.1f);
     // TODO: I'm completely unable to find a way to make the entity think on its own (I can make it think manually but it does not schedule a future think)
 }
 
-void CAdaptiveMusicWatcher::Think() {
-    CLogicalEntity::Think();
+void CAdaptiveMusicWatcher::WatchThink() {
     Log("FMOD Watcher - I'm watching!\n");
-    // Think at 5Hz
-    SetNextThink(gpGlobals->curtime + 0.2f);
+    // Think at 10Hz
+    SetNextThink(gpGlobals->curtime + 0.1f);
 }
 
 //===========================================================================================================
