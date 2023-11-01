@@ -73,7 +73,7 @@ void CAdaptiveMusicWatcher::WatchThink() {
     pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
     if (pAdaptiveMusicPlayer != nullptr) {
         if (true) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
-            int playerHealth = pAdaptiveMusicPlayer->GetHealth();
+            auto playerHealth = (float) pAdaptiveMusicPlayer->GetHealth();
             // Send a FMODSetGlobalParameter usermessage
             CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
             filter.MakeReliable();
