@@ -71,15 +71,17 @@ void CAdaptiveMusicWatcher::Spawn() {
 
 void CAdaptiveMusicWatcher::WatchThink() {
     pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-    if (true && pAdaptiveMusicPlayer != nullptr) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
-        int playerHealth = pAdaptiveMusicPlayer->GetHealth();
-        // Send a FMODSetGlobalParameter usermessage
-        CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
-        filter.MakeReliable();
-        UserMessageBegin(filter, "FMODSetGlobalParameter");
-        WRITE_STRING("health");
-        WRITE_FLOAT(playerHealth);
-        MessageEnd();
+    if (pAdaptiveMusicPlayer != nullptr) {
+        if (true) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
+            int playerHealth = pAdaptiveMusicPlayer->GetHealth();
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+            WRITE_STRING("health");
+            WRITE_FLOAT(playerHealth);
+            MessageEnd();
+        }
     }
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
