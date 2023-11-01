@@ -4,6 +4,7 @@
 #include "igamesystem.h"
 #include "filesystem.h"
 #include <KeyValues.h>
+#include <string>
 #include "isaverestore.h"
 #include "gamestats.h"
 #include "ai_basenpc.h"
@@ -13,51 +14,8 @@
 #include "tier0/memdbgon.h"
 
 //===========================================================================================================
-// ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
+// HELPERS AND SHARED POINTERS
 //===========================================================================================================
-
-class CAdaptiveMusicWatcher : public CLogicalEntity {
-public:
-    DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
-    DECLARE_DATADESC();
-
-    CAdaptiveMusicWatcher() {
-        Msg("FMOD Watcher - Creating a new watcher\n");
-    }
-
-    void Spawn() override;
-
-    void WatchThink();
-
-private:
-
-};
-
-LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
-
-BEGIN_DATADESC(CAdaptiveMusicWatcher)
-                    DEFINE_THINKFUNC(WatchThink)
-END_DATADESC()
-
-void CAdaptiveMusicWatcher::Spawn() {
-    CLogicalEntity::Spawn();
-    Log("FMOD Watcher - I'm spawning!\n");
-    SetThink(&CAdaptiveMusicWatcher::WatchThink);
-    SetNextThink(gpGlobals->curtime + 0.1f);
-    // TODO: I'm completely unable to find a way to make the entity think on its own (I can make it think manually but it does not schedule a future think)
-}
-
-void CAdaptiveMusicWatcher::WatchThink() {
-    Log("FMOD Watcher - I'm watching!\n");
-    // Think at 10Hz
-    SetNextThink(gpGlobals->curtime + 0.1f);
-}
-
-//===========================================================================================================
-// ADAPTIVE MUSIC GAME SYSTEM
-//===========================================================================================================
-
-ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE, "Automatically set by the game when an adaptive music file is available for the current map.");
 
 CBasePlayer *pAdaptiveMusicPlayer;
 
@@ -77,6 +35,62 @@ CBasePlayer *GetAdaptiveMusicPlayer(void) {
 
     return pPlayer;
 }
+
+//===========================================================================================================
+// ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
+//===========================================================================================================
+
+class CAdaptiveMusicWatcher : public CLogicalEntity {
+public:
+    DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
+    DECLARE_DATADESC();
+
+    CAdaptiveMusicWatcher() {
+    }
+
+    void Spawn() override;
+
+    void WatchThink();
+
+private:
+
+};
+
+LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
+
+BEGIN_DATADESC(CAdaptiveMusicWatcher)
+                    DEFINE_THINKFUNC(WatchThink)
+END_DATADESC()
+
+void CAdaptiveMusicWatcher::Spawn() {
+    CLogicalEntity::Spawn();
+    Log("FMOD Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicWatcher::WatchThink);
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+void CAdaptiveMusicWatcher::WatchThink() {
+    pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
+    if (true) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
+        if (pAdaptiveMusicPlayer != nullptr) {
+            int playerHealth = pAdaptiveMusicPlayer->GetHealth();
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+			WRITE_STRING("health");
+            WRITE_FLOAT(playerHealth);
+            MessageEnd();
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+//===========================================================================================================
+// ADAPTIVE MUSIC GAME SYSTEM
+//===========================================================================================================
+
+ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE, "Automatically set by the game when an adaptive music file is available for the current map.");
 
 class CFMODEventListener : public IGameEventListener2 {
 
@@ -201,6 +215,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 MessageEnd();
             } else if (!Q_strcmp(elementKey, "event")) {
                 startedEventPath = elementValue;
+                ShutDownAdaptiveMusic(); // Ensure an existing music is not playing anymore (avoids piling up events)
                 Log("FMOD Adaptive Music - Telling the FMOD Client to start the event '%s'\n", startedEventPath);
                 // Send a FMODStartEvent UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
