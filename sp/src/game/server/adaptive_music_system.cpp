@@ -71,17 +71,15 @@ void CAdaptiveMusicWatcher::Spawn() {
 
 void CAdaptiveMusicWatcher::WatchThink() {
     pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-    if (true) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
-        if (pAdaptiveMusicPlayer != nullptr) {
-            int playerHealth = pAdaptiveMusicPlayer->GetHealth();
-            // Send a FMODSetGlobalParameter usermessage
-            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
-            filter.MakeReliable();
-            UserMessageBegin(filter, "FMODSetGlobalParameter");
-			WRITE_STRING("health");
-            WRITE_FLOAT(playerHealth);
-            MessageEnd();
-        }
+    if (true && pAdaptiveMusicPlayer != nullptr) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
+        int playerHealth = pAdaptiveMusicPlayer->GetHealth();
+        // Send a FMODSetGlobalParameter usermessage
+        CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+        filter.MakeReliable();
+        UserMessageBegin(filter, "FMODSetGlobalParameter");
+        WRITE_STRING("health");
+        WRITE_FLOAT(playerHealth);
+        MessageEnd();
     }
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
@@ -242,18 +240,15 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                     // healthWatcher->Spawn();
 
                     // Spawn the watcher entity
-                    CBaseEntity *pNode = CreateEntityByName( "adaptive_music_watcher" );
-                    if ( pNode )
-                    {
-                        DispatchSpawn( pNode );
+                    CBaseEntity *pNode = CreateEntityByName("adaptive_music_watcher");
+                    if (pNode) {
+                        DispatchSpawn(pNode);
                         EHANDLE hHandle;
                         hHandle = pNode;
-                        CAdaptiveMusicWatcher *pAdaptiveMusicWatcher = dynamic_cast<CAdaptiveMusicWatcher*>(pNode);
+                        CAdaptiveMusicWatcher *pAdaptiveMusicWatcher = dynamic_cast<CAdaptiveMusicWatcher *>(pNode);
                         pAdaptiveMusicWatcher->Activate();
-                    }
-                    else
-                    {
-                        Warning("FMOD Adaptive Music - Failed to spawn AdaptiveMusicWatcher entity\n" );
+                    } else {
+                        Warning("FMOD Adaptive Music - Failed to spawn AdaptiveMusicWatcher entity\n");
                     }
 
 
