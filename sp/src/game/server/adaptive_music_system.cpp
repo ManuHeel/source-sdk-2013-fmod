@@ -14,39 +14,21 @@
 #include "tier0/memdbgon.h"
 
 //===========================================================================================================
-// HELPERS AND SHARED POINTERS
-//===========================================================================================================
-
-CBasePlayer *pAdaptiveMusicPlayer;
-
-//-----------------------------------------------------------------------------
-// Purpose: Get the Adaptive Music Player
-// Output: Pointer to a CBasePlayer of the main Player
-//-----------------------------------------------------------------------------
-CBasePlayer *GetAdaptiveMusicPlayer(void) {
-    CBasePlayer *pPlayer;
-
-    if (gpGlobals->maxClients <= 1) {
-        pPlayer = UTIL_GetLocalPlayer();
-    } else {
-        // only respond to the first player
-        pPlayer = UTIL_PlayerByIndex(1);
-    }
-
-    return pPlayer;
-}
-
-//===========================================================================================================
 // ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
 //===========================================================================================================
 
 class CAdaptiveMusicWatcher : public CLogicalEntity {
+
+private:
+    CAdaptiveMusicSystem *pAdaptiveMusicSystem;
+
 public:
     DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
     DECLARE_DATADESC();
 
-    CAdaptiveMusicWatcher() {
-    }
+    explicit CAdaptiveMusicWatcher() = default;
+
+    void SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef);
 
     void Spawn() override;
 
@@ -62,6 +44,10 @@ BEGIN_DATADESC(CAdaptiveMusicWatcher)
                     DEFINE_THINKFUNC(WatchThink)
 END_DATADESC()
 
+void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
+    pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
+}
+
 void CAdaptiveMusicWatcher::Spawn() {
     CLogicalEntity::Spawn();
     Log("FMOD Watcher - Spawning\n");
@@ -70,12 +56,12 @@ void CAdaptiveMusicWatcher::Spawn() {
 }
 
 void CAdaptiveMusicWatcher::WatchThink() {
-    pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-    if (pAdaptiveMusicPlayer != nullptr) {
+    CBasePlayer *player = pAdaptiveMusicSystem->pAdaptiveMusicPlayer;
+    if (player != nullptr) {
         if (true) { // TODO : Replace this with a system asking wherever we need for a healthwatcher
-            auto playerHealth = (float) pAdaptiveMusicPlayer->GetHealth();
+            auto playerHealth = (float) player->GetHealth();
             // Send a FMODSetGlobalParameter usermessage
-            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            CSingleUserRecipientFilter filter(player);
             filter.MakeReliable();
             UserMessageBegin(filter, "FMODSetGlobalParameter");
             WRITE_STRING("health");
@@ -98,7 +84,7 @@ private:
     CAdaptiveMusicSystem *pAdaptiveMusicSystem;
 
 public:
-    CFMODEventListener(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
+    explicit CFMODEventListener(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
         pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
         gameeventmanager->AddListener(this, "player_spawn", true);
     }
@@ -107,24 +93,38 @@ public:
     // Purpose: Triggered when a listened GameEvent is fired
     // Input: The fired GameEvent
     //-----------------------------------------------------------------------------
-    virtual void FireGameEvent(IGameEvent *pEvent) {
+    void FireGameEvent(IGameEvent *pEvent) override {
         // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
         if (Q_strcmp(pEvent->GetName(), "player_spawn") == 0) {
             Msg("FMOD Adaptive Music - Player spawned, initializing Adaptive Music\n");
-            pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
+            pAdaptiveMusicSystem->SetAdaptiveMusicPlayer();
             pAdaptiveMusicSystem->InitAdaptiveMusic();
         }
     }
 };
 
-//-----------------------------------------------------------------------------
-// Purpose: Game system to kickstart the adaptive music
-//-----------------------------------------------------------------------------
-
 CFMODEventListener *pFMODEventListener;
 
 const char *loadedBankName;
 const char *startedEventPath;
+
+//-----------------------------------------------------------------------------
+// Purpose: Get the Adaptive Music Player
+// Output: Pointer to a CBasePlayer of the main Player
+//-----------------------------------------------------------------------------
+CBasePlayer *CAdaptiveMusicSystem::SetAdaptiveMusicPlayer() {
+    CBasePlayer *pPlayer;
+
+    if (gpGlobals->maxClients <= 1) {
+        pPlayer = UTIL_GetLocalPlayer();
+    } else {
+        // only respond to the first player
+        pPlayer = UTIL_PlayerByIndex(1);
+    }
+
+    pAdaptiveMusicPlayer = pPlayer;
+    return pPlayer;
+}
 
 CAdaptiveMusicSystem::CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSystem") {
 }
@@ -154,13 +154,13 @@ void CAdaptiveMusicSystem::LevelInitPreEntity() {
 void CAdaptiveMusicSystem::LevelInitPostEntity() {
     // When loading a map, try to find an existing player (map change) and init the AdaptiveMusic
     Msg("FMOD Adaptive Music - Level loaded, trying to find the player\n");
-    pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-    if (pAdaptiveMusicPlayer != NULL) {
+    SetAdaptiveMusicPlayer();
+    if (pAdaptiveMusicPlayer != nullptr) {
         Msg("FMOD Adaptive Music - Player found, starting Adaptive Music\n");
         InitAdaptiveMusic();
     }
-    // If the player has not been set, this is probably the game starting
-    // and the AdaptiveMusic will init when the player first spawned (GameEvent)
+    // If the player has not been set, this is probably the game starting instead of a new level loading
+    // The AdaptiveMusic will init when the player first spawned (GameEvent)
 }
 
 //-----------------------------------------------------------------------------
@@ -247,7 +247,8 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                         DispatchSpawn(pNode);
                         EHANDLE hHandle;
                         hHandle = pNode;
-                        CAdaptiveMusicWatcher *pAdaptiveMusicWatcher = dynamic_cast<CAdaptiveMusicWatcher *>(pNode);
+                        auto *pAdaptiveMusicWatcher = dynamic_cast<CAdaptiveMusicWatcher *>(pNode);
+                        pAdaptiveMusicWatcher->SetAdaptiveMusicSystem(this);
                         pAdaptiveMusicWatcher->Activate();
                     } else {
                         Warning("FMOD Adaptive Music - Failed to spawn AdaptiveMusicWatcher entity\n");
@@ -272,7 +273,7 @@ void CAdaptiveMusicSystem::InitAdaptiveMusic() {
         // Find the adaptive music file
         char szFullName[512];
         Q_snprintf(szFullName, sizeof(szFullName), "maps/%s_adaptivemusic.txt", STRING(gpGlobals->mapname));
-        KeyValues *keyValue = new KeyValues("adaptive_music");
+        auto *keyValue = new KeyValues("adaptive_music");
         if (keyValue->LoadFromFile(filesystem, szFullName, "MOD")) {
             Msg("FMOD Adaptive Music - Loading adaptive music data from '%s'\n", szFullName);
             KeyValues *keyValueSubset = keyValue->GetFirstSubKey();
@@ -295,8 +296,8 @@ void CAdaptiveMusicSystem::InitAdaptiveMusic() {
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::ShutDownAdaptiveMusic() {
     Msg("FMOD Adaptive Music - Shutting down adaptive music for the map\n");
-    pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-    if (pAdaptiveMusicPlayer != NULL && startedEventPath != NULL) {
+    SetAdaptiveMusicPlayer();
+    if (pAdaptiveMusicPlayer != nullptr && startedEventPath != nullptr) {
         Log("FMOD Adaptive Music - Telling the FMOD Client to stop the event '%s'\n", startedEventPath);
         // Send a FMODStopEvent usermessage
         CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
