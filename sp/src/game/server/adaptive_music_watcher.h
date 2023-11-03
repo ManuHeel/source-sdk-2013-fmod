@@ -10,18 +10,25 @@ class CAdaptiveMusicWatcher : public CLogicalEntity {
 
 private:
     CAdaptiveMusicSystem *pAdaptiveMusicSystem{};
+    CBasePlayer *pAdaptiveMusicPlayer{};
+
+    // Health watcher
+    bool watchHealth = false;
+    float lastKnownHealth = 100.0f;
 
 public:
     DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
     DECLARE_DATADESC();
 
-    explicit CAdaptiveMusicWatcher() = default;
+    explicit CAdaptiveMusicWatcher();
 
     void SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef);
 
     void Spawn() override;
 
     void WatchThink();
+
+    void WatchHealth();
 
 private:
 
