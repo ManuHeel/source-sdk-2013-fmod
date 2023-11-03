@@ -27,6 +27,4 @@ private:
 
 };
 
-LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
-
 #endif //ADAPTIVE_MUSIC_WATCHER_H

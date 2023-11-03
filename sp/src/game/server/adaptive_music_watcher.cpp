@@ -10,6 +10,8 @@ BEGIN_DATADESC(CAdaptiveMusicWatcher)
                     DEFINE_THINKFUNC(WatchThink)
 END_DATADESC()
 
+LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
+
 void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
     pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
 }
