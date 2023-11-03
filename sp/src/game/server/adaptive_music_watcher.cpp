@@ -6,6 +6,10 @@
 // ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
 //===========================================================================================================
 
+BEGIN_DATADESC(CAdaptiveMusicWatcher)
+                    DEFINE_THINKFUNC(WatchThink)
+END_DATADESC()
+
 void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
     pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
 }
@@ -33,4 +37,3 @@ void CAdaptiveMusicWatcher::WatchThink() {
     }
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
-

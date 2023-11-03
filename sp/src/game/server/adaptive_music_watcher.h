@@ -9,7 +9,7 @@
 class CAdaptiveMusicWatcher : public CLogicalEntity {
 
 private:
-    CAdaptiveMusicSystem *pAdaptiveMusicSystem {};
+    CAdaptiveMusicSystem *pAdaptiveMusicSystem{};
 
 public:
     DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
@@ -28,9 +28,5 @@ private:
 };
 
 LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
-
-BEGIN_DATADESC(CAdaptiveMusicWatcher)
-                    DEFINE_THINKFUNC(WatchThink)
-END_DATADESC()
 
 #endif //ADAPTIVE_MUSIC_WATCHER_H

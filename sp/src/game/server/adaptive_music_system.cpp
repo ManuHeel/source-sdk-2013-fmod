@@ -179,12 +179,8 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 const char *watcherType = elementValue;
                 if (!Q_strcmp(watcherType, "health")) {
                     Msg("FMOD Adaptive Music - Found a new HealthWatcher to create\n");
-                    // For now, creating a default watcher
-                    // CAdaptiveMusicWatcher *healthWatcher = new CAdaptiveMusicWatcher;
-                    // healthWatcher->Spawn();
-
                     // Spawn the watcher entity
-                    CBaseEntity *pNode = CreateEntityByName("adaptive_music_watcher");
+                    CBaseEntity *pNode = CreateEntityByName("adaptive_music_watcher"); // For now, creating a default watcher
                     if (pNode) {
                         DispatchSpawn(pNode);
                         EHANDLE hHandle;
