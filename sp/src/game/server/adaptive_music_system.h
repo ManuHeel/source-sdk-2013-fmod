@@ -5,30 +5,31 @@
 #endif
 
 #include "igamesystem.h"
-#include <KeyValues.h>
+#include "cbase.h"
 
 class CAdaptiveMusicSystem : public CAutoGameSystem {
 
 private:
-    const char *loadedBankName;
-    const char *startedEventPath;
+    const char *loadedBankName{};
+    const char *startedEventPath{};
 
 public:
+    CBasePlayer *pAdaptiveMusicPlayer{};
 
     CAdaptiveMusicSystem();
 
-    virtual bool Init();
+    bool Init() override;
 
-    virtual void LevelInitPreEntity();
+    void LevelInitPreEntity() override;
 
-    virtual void LevelInitPostEntity();
+    void LevelInitPostEntity() override;
 
-    virtual void LevelShutdownPreEntity();
+    void LevelShutdownPreEntity() override;
 
-    virtual void Shutdown();
+    void Shutdown() override;
 
     // Set the available ConVar if we can find adaptive music data for this level
-    void CalculateAdaptiveMusicState();
+    static void CalculateAdaptiveMusicState();
 
     void ParseKeyValue(KeyValues *keyValue);
 
@@ -36,6 +37,7 @@ public:
 
     void ShutDownAdaptiveMusic();
 
+    CBasePlayer *SetAdaptiveMusicPlayer();
 };
 
 extern CAdaptiveMusicSystem *AdaptiveMusicSystem();

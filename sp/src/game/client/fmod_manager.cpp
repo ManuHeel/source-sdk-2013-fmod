@@ -240,7 +240,7 @@ int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {
         Warning("FMOD Client - Could not set Global Parameter value (%s) (%f). Error: (%d) %s\n", parameterName, value, result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD Client - Global Parameter successfully set (%s) (%f)\n", parameterName, value);
+    //Log("FMOD Client - Global Parameter successfully set (%s) (%f)\n", parameterName, value); // A bit too much verbose logging
     return (0);
 }
 
