@@ -8,13 +8,13 @@
 
 BEGIN_DATADESC(CAdaptiveMusicWatcher)
                     DEFINE_THINKFUNC(WatchThink),
-                    // Health Watcher
-                    DEFINE_FIELD(watchHealth, FIELD_BOOLEAN)
 END_DATADESC()
 
 LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
 
-CAdaptiveMusicWatcher::CAdaptiveMusicWatcher() = default;
+CAdaptiveMusicWatcher::CAdaptiveMusicWatcher() {
+    lastKnownHealth = 0.0f;
+};
 
 void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
     pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
@@ -30,23 +30,18 @@ void CAdaptiveMusicWatcher::Spawn() {
 
 void CAdaptiveMusicWatcher::WatchThink() {
     if (pAdaptiveMusicPlayer != nullptr) {
-        if (watchHealth) {
-            WatchHealth();
+        auto playerHealth = (float) pAdaptiveMusicPlayer->GetHealth();
+        if (playerHealth != lastKnownHealth) {
+            lastKnownHealth = playerHealth;
+            Log("Last known health: %f, current health: %f", lastKnownHealth, playerHealth);
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+            WRITE_STRING("health");
+            WRITE_FLOAT(playerHealth);
+            MessageEnd();
         }
     }
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
-}
-
-void CAdaptiveMusicWatcher::WatchHealth() {
-    auto playerHealth = (float) pAdaptiveMusicPlayer->GetHealth();
-    if (playerHealth != lastKnownHealth) {
-        lastKnownHealth = playerHealth;
-        // Send a FMODSetGlobalParameter usermessage
-        CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
-        filter.MakeReliable();
-        UserMessageBegin(filter, "FMODSetGlobalParameter");
-        WRITE_STRING("health");
-        WRITE_FLOAT(playerHealth);
-        MessageEnd();
-    }
 }

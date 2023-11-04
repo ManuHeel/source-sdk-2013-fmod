@@ -13,8 +13,7 @@ private:
     CBasePlayer *pAdaptiveMusicPlayer{};
 
     // Health watcher
-    bool watchHealth = false;
-    float lastKnownHealth = 100.0f;
+    float lastKnownHealth;
 
 public:
     DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
@@ -27,8 +26,6 @@ public:
     void Spawn() override;
 
     void WatchThink();
-
-    void WatchHealth();
 
 private:
 
