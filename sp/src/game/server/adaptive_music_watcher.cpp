@@ -99,7 +99,6 @@ void CAdaptiveMusicSuitWatcher::Spawn() {
 void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
     if (pAdaptiveMusicPlayer != nullptr) {
         bool suitStatus = pAdaptiveMusicPlayer->IsSuitEquipped();
-        Log("Suit is equipped?: %f", static_cast<float>(suitStatus));
         if (suitStatus != lastKnownSuitStatus) {
             lastKnownSuitStatus = suitStatus;
             // Send a FMODSetGlobalParameter usermessage
