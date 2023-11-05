@@ -74,3 +74,42 @@ void CAdaptiveMusicHealthWatcher::WatchHealthThink() {
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
 
+//===========================================================================================================
+// SUIT WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicSuitWatcher)
+                    DEFINE_THINKFUNC(WatchSuitThink),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_suit_watcher, CAdaptiveMusicSuitWatcher
+);
+
+CAdaptiveMusicSuitWatcher::CAdaptiveMusicSuitWatcher() {
+    lastKnownSuitStatus = false;
+};
+
+void CAdaptiveMusicSuitWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Suit Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicSuitWatcher::WatchSuitThink);
+    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+}
+
+void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
+    if (pAdaptiveMusicPlayer != nullptr) {
+        bool suitStatus = pAdaptiveMusicPlayer->IsSuitEquipped();
+        Log("Suit is equipped?: %f", static_cast<float>(suitStatus));
+        if (suitStatus != lastKnownSuitStatus) {
+            lastKnownSuitStatus = suitStatus;
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+            WRITE_STRING(parameterName);
+            WRITE_FLOAT(static_cast<float>(suitStatus)); // Sending the boolean as a float to ease FMOD handling
+            MessageEnd();
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+}

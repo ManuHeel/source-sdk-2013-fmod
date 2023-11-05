@@ -57,4 +57,27 @@ private:
 
 };
 
+//===========================================================================================================
+// SUIT WATCHER
+//===========================================================================================================
+class CAdaptiveMusicSuitWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // Suit watcher
+    bool lastKnownSuitStatus;
+
+public:
+    DECLARE_CLASS(CAdaptiveMusicHealthWatcher, CAdaptiveMusicWatcher);
+    DECLARE_DATADESC();
+
+    explicit CAdaptiveMusicSuitWatcher();
+
+    void Spawn() override;
+
+    void WatchSuitThink();
+
+private:
+
+};
+
 #endif //ADAPTIVE_MUSIC_WATCHER_H

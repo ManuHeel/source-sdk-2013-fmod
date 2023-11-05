@@ -192,7 +192,6 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             return;
         }
         if (!Q_strcmp(watcherType, "health")) {
-            watcherType = "health";
             // Create and spawn the watcher entity, then set its params
             CBaseEntity *pNode = CreateEntityByName("adaptive_music_health_watcher");
             if (pNode) {
@@ -202,8 +201,22 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 healthWatcher->SetParameterName(watcherParam);
                 healthWatcher->Activate();
             } else {
-                Warning("FMOD Adaptive Music - Failed to spawn AdaptiveMusicWatcher entity\n");
+                Warning("FMOD Adaptive Music - Failed to spawn a HealthWatcher entity\n");
             }
+        } else if (!Q_strcmp(watcherType, "suit")) {
+            // Create and spawn the watcher entity, then set its params
+            CBaseEntity *pNode = CreateEntityByName("adaptive_music_suit_watcher");
+            if (pNode) {
+                DispatchSpawn(pNode);
+                auto *suitWatcher = dynamic_cast<CAdaptiveMusicSuitWatcher *>(pNode);
+                suitWatcher->SetAdaptiveMusicSystem(this);
+                suitWatcher->SetParameterName(watcherParam);
+                suitWatcher->Activate();
+            } else {
+                Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
+            }
+        } else {
+            Warning("FMOD Adaptive Music - Unknown watcher type: %s\n", watcherType);
         }
 
     }
