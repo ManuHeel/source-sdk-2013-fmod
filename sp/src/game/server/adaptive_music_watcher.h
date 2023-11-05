@@ -99,6 +99,8 @@ public:
 
     void WatchChasedThink();
 
+    int GetChasedCount();
+
 private:
 
 };
