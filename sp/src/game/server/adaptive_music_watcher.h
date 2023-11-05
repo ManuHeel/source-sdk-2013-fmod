@@ -6,15 +6,15 @@
 
 #include "cbase.h"
 
+//===========================================================================================================
+// BASE WATCHER
+//===========================================================================================================
 class CAdaptiveMusicWatcher : public CLogicalEntity {
 
-private:
+protected:
     CAdaptiveMusicSystem *pAdaptiveMusicSystem{};
     CBasePlayer *pAdaptiveMusicPlayer{};
-
-    // Health watcher
-    bool watchHealth = false;
-    float lastKnownHealth = 100.0f;
+    const char *parameterName;
 
 public:
     DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
@@ -24,11 +24,34 @@ public:
 
     void SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef);
 
+    void SetParameterName(const char *pName);
+
     void Spawn() override;
 
     void WatchThink();
 
-    void WatchHealth();
+private:
+
+};
+
+//===========================================================================================================
+// HEALTH WATCHER
+//===========================================================================================================
+class CAdaptiveMusicHealthWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // Health watcher
+    float lastKnownHealth;
+
+public:
+    DECLARE_CLASS(CAdaptiveMusicHealthWatcher, CAdaptiveMusicWatcher);
+    DECLARE_DATADESC();
+
+    explicit CAdaptiveMusicHealthWatcher();
+
+    void Spawn() override;
+
+    void WatchHealthThink();
 
 private:
 
