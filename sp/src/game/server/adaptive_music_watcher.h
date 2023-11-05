@@ -14,6 +14,7 @@ class CAdaptiveMusicWatcher : public CLogicalEntity {
 protected:
     CAdaptiveMusicSystem *pAdaptiveMusicSystem{};
     CBasePlayer *pAdaptiveMusicPlayer{};
+    const char *parameterName;
 
 public:
     DECLARE_CLASS(CAdaptiveMusicWatcher, CLogicalEntity);
@@ -22,6 +23,8 @@ public:
     explicit CAdaptiveMusicWatcher();
 
     void SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef);
+
+    void SetParameterName(const char *pName);
 
     void Spawn() override;
 
