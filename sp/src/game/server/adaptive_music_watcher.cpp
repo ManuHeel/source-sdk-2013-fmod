@@ -43,8 +43,7 @@ BEGIN_DATADESC(CAdaptiveMusicHealthWatcher)
                     DEFINE_THINKFUNC(WatchHealthThink),
 END_DATADESC()
 
-LINK_ENTITY_TO_CLASS(adaptive_music_health_watcher, CAdaptiveMusicHealthWatcher
-);
+LINK_ENTITY_TO_CLASS(adaptive_music_health_watcher, CAdaptiveMusicHealthWatcher);
 
 CAdaptiveMusicHealthWatcher::CAdaptiveMusicHealthWatcher() {
     lastKnownHealth = 0.0f;
@@ -111,4 +110,42 @@ void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
         }
     }
     SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+}
+
+//===========================================================================================================
+// CHASED WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicChasedWatcher)
+                    DEFINE_THINKFUNC(WatchChasedThink),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_chased_watcher, CAdaptiveMusicChasedWatcher);
+
+CAdaptiveMusicChasedWatcher::CAdaptiveMusicChasedWatcher() {
+    lastKnownChased = 0;
+};
+
+void CAdaptiveMusicChasedWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Health Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicChasedWatcher::WatchChasedThink);
+    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+}
+
+void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
+    if (pAdaptiveMusicPlayer != nullptr) {
+        auto chased = static_cast<float>(0); // TODO
+        if (chased != lastKnownChased) {
+            lastKnownChased = chased;
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+            WRITE_STRING(parameterName);
+            WRITE_FLOAT(chased);
+            MessageEnd();
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
