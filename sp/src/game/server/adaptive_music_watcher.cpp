@@ -3,18 +3,17 @@
 #include "adaptive_music_watcher.h"
 
 //===========================================================================================================
-// ADAPTIVE MUSIC WATCHER LOGICAL ENTITY
+// BASE WATCHER
 //===========================================================================================================
 
 BEGIN_DATADESC(CAdaptiveMusicWatcher)
-                    DEFINE_THINKFUNC(WatchThink),
-END_DATADESC()
+DEFINE_THINKFUNC(WatchThink),
+        END_DATADESC()
 
-LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher);
+LINK_ENTITY_TO_CLASS(adaptive_music_watcher, CAdaptiveMusicWatcher
+);
 
-CAdaptiveMusicWatcher::CAdaptiveMusicWatcher() {
-    lastKnownHealth = 0.0f;
-};
+CAdaptiveMusicWatcher::CAdaptiveMusicWatcher() = default;
 
 void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
     pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
@@ -23,12 +22,38 @@ void CAdaptiveMusicWatcher::SetAdaptiveMusicSystem(CAdaptiveMusicSystem *pAdapti
 
 void CAdaptiveMusicWatcher::Spawn() {
     CLogicalEntity::Spawn();
-    Log("FMOD Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicWatcher::WatchThink);
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+    SetNextThink(gpGlobals->curtime + 1.0f); // Think at 1Hz
 }
 
 void CAdaptiveMusicWatcher::WatchThink() {
+    // Base watcher so doing nothing (shouldn't even be created as-is)
+    SetNextThink(gpGlobals->curtime + 1.0f); // Think at 1Hz
+}
+
+//===========================================================================================================
+// HEALTH WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicHealthWatcher)
+DEFINE_THINKFUNC(WatchHealthThink),
+        END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_health_watcher, CAdaptiveMusicHealthWatcher
+);
+
+CAdaptiveMusicHealthWatcher::CAdaptiveMusicHealthWatcher() {
+    lastKnownHealth = 0.0f;
+};
+
+void CAdaptiveMusicHealthWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Health Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicHealthWatcher::WatchHealthThink);
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+void CAdaptiveMusicHealthWatcher::WatchHealthThink() {
     if (pAdaptiveMusicPlayer != nullptr) {
         auto playerHealth = (float) pAdaptiveMusicPlayer->GetHealth();
         if (playerHealth != lastKnownHealth) {
@@ -45,3 +70,4 @@ void CAdaptiveMusicWatcher::WatchThink() {
     }
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
+
