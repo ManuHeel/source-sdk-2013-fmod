@@ -47,7 +47,8 @@ BEGIN_DATADESC(CAdaptiveMusicHealthWatcher)
                     DEFINE_THINKFUNC(WatchHealthThink),
 END_DATADESC()
 
-LINK_ENTITY_TO_CLASS(adaptive_music_health_watcher, CAdaptiveMusicHealthWatcher);
+LINK_ENTITY_TO_CLASS(adaptive_music_health_watcher, CAdaptiveMusicHealthWatcher
+);
 
 CAdaptiveMusicHealthWatcher::CAdaptiveMusicHealthWatcher() {
     lastKnownHealth = 0.0f;
@@ -124,7 +125,8 @@ BEGIN_DATADESC(CAdaptiveMusicChasedWatcher)
                     DEFINE_THINKFUNC(WatchChasedThink),
 END_DATADESC()
 
-LINK_ENTITY_TO_CLASS(adaptive_music_chased_watcher, CAdaptiveMusicChasedWatcher);
+LINK_ENTITY_TO_CLASS(adaptive_music_chased_watcher, CAdaptiveMusicChasedWatcher
+);
 
 CAdaptiveMusicChasedWatcher::CAdaptiveMusicChasedWatcher() {
     lastKnownChased = 0.0f;
@@ -134,13 +136,12 @@ void CAdaptiveMusicChasedWatcher::Spawn() {
     CAdaptiveMusicWatcher::Spawn();
     Log("FMOD Health Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicChasedWatcher::WatchChasedThink);
-    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
 
 void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
     if (pAdaptiveMusicPlayer != nullptr) {
-        CAdaptiveMusicChasedWatcher::GetChasedCount();
-        auto chased = static_cast<float>(0); // TODO
+        auto chased = static_cast<float>(CAdaptiveMusicChasedWatcher::GetChasedCount());
         if (chased != lastKnownChased) {
             lastKnownChased = chased;
             // Send a FMODSetGlobalParameter usermessage
@@ -152,69 +153,36 @@ void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
             MessageEnd();
         }
     }
-    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
 
 // Find Enemy Entities
 int CAdaptiveMusicChasedWatcher::GetChasedCount() {
-    // Get all NPC entites
+    int chasedCount = 0;
     CBaseEntity *pNPC = nullptr;
-    Log("Finding enemies...\n");
     if (pAdaptiveMusicPlayer != nullptr) {
+        // Get all NPC entites
         while ((pNPC = gEntList.FindEntityByClassname(pNPC, "npc_*")) != nullptr) {
-            // TODO: Filter only enemies with a list below and/or a DT_HATE mechanism
-            auto *pAI = dynamic_cast<CAI_BaseNPC *>(pNPC);
+            auto *pAI = dynamic_cast<CAI_BaseNPC *>(pNPC); // TODO: Find if this is the best way to get an NPC's AI, seems convoluted.
             if (pAI) {
-                string_t npcName = pNPC->GetEntityName();
-                if (pAI->GetEnemy() != nullptr) {
-                    const char *enemyName = pAI->GetEnemy()->GetClassname();
-                    Log("Enemy of npc %s is %s\n", npcName, enemyName);
-                }
-                if (pAI->GetTarget() != nullptr) {
-                    const char *targetName = pAI->GetTarget()->GetClassname();
-                    Log("Target of npc %s is %s\n", npcName, targetName);
+                int relationToPlayer = pAI->IRelationType(pAdaptiveMusicPlayer);
+                // If the NPC hates the player...
+                if (relationToPlayer == D_HT) {
+                    // ... and his current ennemy is the player...
+                    if (pAI->GetEnemy() != nullptr && pAI->GetEnemy() == pAdaptiveMusicPlayer) {
+                        // ...then we consider the player chased/fought by the NPC
+                        chasedCount++;
+                    }
+                    /*
+                    // Unused at the moment
+                    if (pAI->GetTarget() != nullptr) {
+                        const char *targetName = pAI->GetTarget()->GetClassname();
+                        Log("Target of npc %s is %s\n", npcName, targetName);
+                    }
+                    */
                 }
             }
-            //int relation = pAI->IRelationType(pAdaptiveMusicPlayer);
-            //if (relation == D_HT) {
-            //    Log("Hating the player\n");
-            //}
-            /*
-            // Check if the entity is in the "enemy" list
-            if (FStrEq(pEntity->GetClassname(), "npc_advisor")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_antlion")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_antlionguard")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_barnacle")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_breen")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_clawscanner")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_combinedropship")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_combinegunship")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_fastzombie")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "nps_fastzombie_torso")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_headcrab")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_headcrab_black")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_headcrab_fast")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_helicopter")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            } else if (FStrEq(pEntity->GetClassname(), "npc_hunter")) {
-                Log("%s is a %s\n", pEntity->GetEntityName(), pEntity->GetClassname());
-            }
-             */
-
         }
     }
-    return 0; // TODO
+    return chasedCount;
 }
