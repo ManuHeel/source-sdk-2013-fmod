@@ -1,6 +1,10 @@
 #include "cbase.h"
+#include "baseentity.h"
+#include "ai_basenpc.h"
+
 #include "adaptive_music_system.h"
 #include "adaptive_music_watcher.h"
+
 
 //===========================================================================================================
 // BASE WATCHER
@@ -111,4 +115,74 @@ void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
         }
     }
     SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+}
+
+//===========================================================================================================
+// CHASED WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicChasedWatcher)
+                    DEFINE_THINKFUNC(WatchChasedThink),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_chased_watcher, CAdaptiveMusicChasedWatcher
+);
+
+CAdaptiveMusicChasedWatcher::CAdaptiveMusicChasedWatcher() {
+    lastKnownChased = 0.0f;
+};
+
+void CAdaptiveMusicChasedWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Health Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicChasedWatcher::WatchChasedThink);
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+}
+
+void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
+    if (pAdaptiveMusicPlayer != nullptr) {
+        auto chased = static_cast<float>(CAdaptiveMusicChasedWatcher::GetChasedCount());
+        if (chased != lastKnownChased) {
+            lastKnownChased = chased;
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+            WRITE_STRING(parameterName);
+            WRITE_FLOAT(chased);
+            MessageEnd();
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+}
+
+// Find Enemy Entities
+int CAdaptiveMusicChasedWatcher::GetChasedCount() {
+    int chasedCount = 0;
+    CBaseEntity *pNPC = nullptr;
+    if (pAdaptiveMusicPlayer != nullptr) {
+        // Get all NPC entites
+        while ((pNPC = gEntList.FindEntityByClassname(pNPC, "npc_*")) != nullptr) {
+            auto *pAI = dynamic_cast<CAI_BaseNPC *>(pNPC); // TODO: Find if this is the best way to get an NPC's AI, seems convoluted.
+            if (pAI) {
+                int relationToPlayer = pAI->IRelationType(pAdaptiveMusicPlayer);
+                // If the NPC hates the player...
+                if (relationToPlayer == D_HT) {
+                    // ... and his current ennemy is the player...
+                    if (pAI->GetEnemy() != nullptr && pAI->GetEnemy() == pAdaptiveMusicPlayer) {
+                        // ...then we consider the player chased/fought by the NPC
+                        chasedCount++;
+                    }
+                    /*
+                    // Unused at the moment
+                    if (pAI->GetTarget() != nullptr) {
+                        const char *targetName = pAI->GetTarget()->GetClassname();
+                        Log("Target of npc %s is %s\n", npcName, targetName);
+                    }
+                    */
+                }
+            }
+        }
+    }
+    return chasedCount;
 }

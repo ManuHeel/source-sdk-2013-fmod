@@ -215,6 +215,18 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             } else {
                 Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
             }
+        } else if (!Q_strcmp(watcherType, "chased")) {
+            // Create and spawn the watcher entity, then set its params
+            CBaseEntity *pNode = CreateEntityByName("adaptive_music_chased_watcher");
+            if (pNode) {
+                DispatchSpawn(pNode);
+                auto *chasedWatcher = dynamic_cast<CAdaptiveMusicChasedWatcher *>(pNode);
+                chasedWatcher->SetAdaptiveMusicSystem(this);
+                chasedWatcher->SetParameterName(watcherParam);
+                chasedWatcher->Activate();
+            } else {
+                Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
+            }
         } else {
             Warning("FMOD Adaptive Music - Unknown watcher type: %s\n", watcherType);
         }

@@ -80,4 +80,29 @@ private:
 
 };
 
+//===========================================================================================================
+// CHASED WATCHER
+//===========================================================================================================
+class CAdaptiveMusicChasedWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // Chased watcher
+    float lastKnownChased;
+
+public:
+    DECLARE_CLASS(CAdaptiveMusicChasedWatcher, CAdaptiveMusicWatcher);
+    DECLARE_DATADESC();
+
+    explicit CAdaptiveMusicChasedWatcher();
+
+    void Spawn() override;
+
+    void WatchChasedThink();
+
+    int GetChasedCount();
+
+private:
+
+};
+
 #endif //ADAPTIVE_MUSIC_WATCHER_H
