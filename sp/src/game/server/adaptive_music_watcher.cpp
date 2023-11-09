@@ -2,6 +2,8 @@
 #include "baseentity.h"
 #include "ai_basenpc.h"
 
+#include <algorithm>
+
 #include "adaptive_music_system.h"
 #include "adaptive_music_watcher.h"
 
@@ -129,6 +131,37 @@ LINK_ENTITY_TO_CLASS(adaptive_music_chased_watcher, CAdaptiveMusicChasedWatcher
 );
 
 CAdaptiveMusicChasedWatcher::CAdaptiveMusicChasedWatcher() {
+    enemies = {
+            "npc_advisor",
+            "npc_antlion",
+            "npc_antlionguard",
+            "npc_barnacle",
+            "npc_breen",
+            "npc_clawscanner",
+            "npc_combinedropship",
+            "npc_combinegunship",
+            "npc_fastzombie",
+            "npc_fastzombie_torso",
+            "npc_headcrab",
+            "npc_headcrab_black",
+            "npc_headcrab_fast",
+            "npc_helicopter",
+            "npc_hunter",
+            "npc_ichthyosaur",
+            "npc_manhack",
+            "npc_metropolice",
+            "npc_poisonzombie",
+            "npc_rollermine",
+            "npc_sniper",
+            "npc_stalker",
+            "npc_strider",
+            "npc_turret_ceiling",
+            "npc_turret_floor",
+            "npc_turret_ground",
+            "npc_zombie",
+            "npc_zombie_torso",
+            "npc_zombine"
+    };
     lastKnownChased = 0.0f;
 };
 
@@ -156,6 +189,11 @@ void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
 
+bool CAdaptiveMusicChasedWatcher::IsEnemy(const char *className) {
+    std::string stringClassName(className); // Cast into a C++-style string
+    return std::find(enemies.begin(), enemies.end(), className) != enemies.end();
+}
+
 // Find Enemy Entities
 int CAdaptiveMusicChasedWatcher::GetChasedCount() {
     int chasedCount = 0;
@@ -166,8 +204,9 @@ int CAdaptiveMusicChasedWatcher::GetChasedCount() {
             auto *pAI = dynamic_cast<CAI_BaseNPC *>(pNPC); // TODO: Find if this is the best way to get an NPC's AI, seems convoluted.
             if (pAI) {
                 int relationToPlayer = pAI->IRelationType(pAdaptiveMusicPlayer);
-                // If the NPC hates the player...
-                if (relationToPlayer == D_HT) {
+                const char *className = pNPC->GetClassname();
+                // If the NPC hates the player and could be an enemy...
+                if (relationToPlayer == D_HT && className != nullptr && IsEnemy(className)) {
                     // ... and his current ennemy is the player...
                     if (pAI->GetEnemy() != nullptr && pAI->GetEnemy() == pAdaptiveMusicPlayer) {
                         // ...then we consider the player chased/fought by the NPC

@@ -4,6 +4,8 @@
 #pragma once
 #endif
 
+#include <vector>
+#include <string>
 #include "cbase.h"
 
 //===========================================================================================================
@@ -87,6 +89,7 @@ class CAdaptiveMusicChasedWatcher : public CAdaptiveMusicWatcher {
 
 protected:
     // Chased watcher
+    std::vector<std::string> enemies;
     float lastKnownChased;
 
 public:
@@ -98,6 +101,8 @@ public:
     void Spawn() override;
 
     void WatchChasedThink();
+
+    bool IsEnemy(const char *className);
 
     int GetChasedCount();
 
