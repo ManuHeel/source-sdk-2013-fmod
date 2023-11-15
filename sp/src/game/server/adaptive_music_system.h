@@ -6,6 +6,8 @@
 
 #include "igamesystem.h"
 #include "cbase.h"
+#include "vector"
+#include "string"
 
 class CAdaptiveMusicSystem : public CAutoGameSystem {
 
@@ -38,6 +40,15 @@ public:
     void ShutDownAdaptiveMusic();
 
     CBasePlayer *SetAdaptiveMusicPlayer();
+
+    // Struct for holding ZoneWatcher zones data
+    struct Zone {
+        float minOrigin[3];
+        float maxOrigin[3];
+        const char *parameterName;
+        bool lastKnownZoneStatus = false;
+    };
+
 };
 
 extern CAdaptiveMusicSystem *AdaptiveMusicSystem();

@@ -3,6 +3,7 @@
 #include "ai_basenpc.h"
 
 #include <algorithm>
+#include <string>
 
 #include "adaptive_music_system.h"
 #include "adaptive_music_watcher.h"
@@ -99,7 +100,7 @@ void CAdaptiveMusicSuitWatcher::Spawn() {
     CAdaptiveMusicWatcher::Spawn();
     Log("FMOD Suit Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicSuitWatcher::WatchSuitThink);
-    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
 
 void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
@@ -116,7 +117,7 @@ void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
             MessageEnd();
         }
     }
-    SetNextThink(gpGlobals->curtime + 0.2f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
 
 //===========================================================================================================
@@ -167,7 +168,7 @@ CAdaptiveMusicChasedWatcher::CAdaptiveMusicChasedWatcher() {
 
 void CAdaptiveMusicChasedWatcher::Spawn() {
     CAdaptiveMusicWatcher::Spawn();
-    Log("FMOD Health Watcher - Spawning\n");
+    Log("FMOD Chased Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicChasedWatcher::WatchChasedThink);
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
@@ -224,4 +225,59 @@ int CAdaptiveMusicChasedWatcher::GetChasedCount() {
         }
     }
     return chasedCount;
+}
+
+//===========================================================================================================
+// ZONE WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicZoneWatcher)
+                    DEFINE_THINKFUNC(WatchZoneThink),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_zone_watcher, CAdaptiveMusicZoneWatcher
+);
+
+bool IsVectorWithinZone(Vector vector, CAdaptiveMusicSystem::Zone zone) {
+    if (
+            (vector.x >= zone.minOrigin[0] && vector.x <= zone.maxOrigin[0]) &&
+            (vector.y >= zone.minOrigin[1] && vector.y <= zone.maxOrigin[1]) &&
+            (vector.z >= zone.minOrigin[2] && vector.z <= zone.maxOrigin[2])) {
+        return true;
+    }
+    return false;
+}
+
+CAdaptiveMusicZoneWatcher::CAdaptiveMusicZoneWatcher() {
+};
+
+void CAdaptiveMusicZoneWatcher::SetZones(std::list<CAdaptiveMusicSystem::Zone> *zonesRef) {
+    zones = zonesRef;
+}
+
+void CAdaptiveMusicZoneWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Zone Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicZoneWatcher::WatchZoneThink);
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+}
+
+void CAdaptiveMusicZoneWatcher::WatchZoneThink() {
+    if (pAdaptiveMusicPlayer != nullptr) {
+        auto currentPosition = pAdaptiveMusicPlayer->GetAbsOrigin();
+        for (CAdaptiveMusicSystem::Zone &zone : *zones) {
+            bool zoneStatus = IsVectorWithinZone(currentPosition, zone);
+            if (zoneStatus != zone.lastKnownZoneStatus) {
+                zone.lastKnownZoneStatus = zoneStatus;
+                // Send a FMODSetGlobalParameter usermessage
+                CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+                filter.MakeReliable();
+                UserMessageBegin(filter, "FMODSetGlobalParameter");
+                WRITE_STRING(zone.parameterName);
+                WRITE_FLOAT(zoneStatus);
+                MessageEnd();
+            }
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
 }
