@@ -4,7 +4,7 @@
 #pragma once
 #endif
 
-#include <vector>
+#include <list>
 #include <string>
 #include "cbase.h"
 
@@ -105,6 +105,31 @@ public:
     bool IsEnemy(const char *className);
 
     int GetChasedCount();
+
+private:
+
+};
+
+//===========================================================================================================
+// ZONE WATCHER
+//===========================================================================================================
+class CAdaptiveMusicZoneWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // Zone watcher
+    std::list<CAdaptiveMusicSystem::Zone> *zones;
+
+public:
+    DECLARE_CLASS(CAdaptiveMusicZoneWatcher, CAdaptiveMusicWatcher);
+    DECLARE_DATADESC();
+
+    explicit CAdaptiveMusicZoneWatcher();
+
+    void SetZones(std::list<CAdaptiveMusicSystem::Zone> *zonesRef);
+
+    void Spawn() override;
+
+    void WatchZoneThink();
 
 private:
 

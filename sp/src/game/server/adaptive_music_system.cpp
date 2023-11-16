@@ -6,6 +6,7 @@
 #include "filesystem.h"
 #include <KeyValues.h>
 #include <string>
+#include <list>
 #include "isaverestore.h"
 #include "gamestats.h"
 #include "ai_basenpc.h"
@@ -170,9 +171,11 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
         }
     } else if (!Q_strcmp(keyValueName, "watcher")) { // The key-value element is defining a watcher and its params for the map
         KeyValues *element = keyValue->GetFirstSubKey();
+
         // Watcher settings
         const char *watcherType = nullptr;
         const char *watcherParam = nullptr;
+        auto *watcherZones = new std::list<Zone>();
 
         // Step 1: parse all elements to gather the watcher settings
         while (element) {
@@ -182,6 +185,33 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 watcherType = elementValue;
             } else if (!Q_strcmp(elementKey, "parameter")) {
                 watcherParam = elementValue;
+            } else if (!Q_strcmp(elementKey, "zones")) {
+                // Zone list settings
+                KeyValues *zone = element->GetFirstSubKey();
+                while (zone) {
+                    const char *zoneKey = zone->GetName();
+                    if (!Q_strcmp(zoneKey, "zone")) {
+                        KeyValues *zoneElement = zone->GetFirstSubKey();
+                        // Create a new Zone struct
+                        Zone pZone;
+                        while (zoneElement) {
+                            const char *zoneElementKey = zoneElement->GetName();
+                            const char *zoneElementValue = zoneElement->GetString();
+                            if (!Q_strcmp(zoneElementKey, "min_origin")) {
+                                UTIL_StringToVector(pZone.minOrigin, zoneElementValue);
+                            } else if (!Q_strcmp(zoneElementKey, "max_origin")) {
+                                UTIL_StringToVector(pZone.maxOrigin, zoneElementValue);
+                            } else if (!Q_strcmp(zoneElementKey, "parameter")) {
+                                pZone.parameterName = zoneElementValue;
+                            }
+							zoneElement = zoneElement->GetNextKey();
+                        }
+                        watcherZones->push_back(pZone);
+                    } else {
+                        Warning("FMOD Adaptive Music - Found an unknown \"zones\" subkey in file\n");
+                    }
+					zone = zone->GetNextKey();
+                }
             }
             element = element->GetNextKey();
         }
@@ -193,7 +223,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
         }
         if (!Q_strcmp(watcherType, "health")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity *pNode = CreateEntityByName("adaptive_music_health_watcher");
+            CBaseEntity * pNode = CreateEntityByName("adaptive_music_health_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
                 auto *healthWatcher = dynamic_cast<CAdaptiveMusicHealthWatcher *>(pNode);
@@ -205,7 +235,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             }
         } else if (!Q_strcmp(watcherType, "suit")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity *pNode = CreateEntityByName("adaptive_music_suit_watcher");
+            CBaseEntity * pNode = CreateEntityByName("adaptive_music_suit_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
                 auto *suitWatcher = dynamic_cast<CAdaptiveMusicSuitWatcher *>(pNode);
@@ -217,7 +247,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             }
         } else if (!Q_strcmp(watcherType, "chased")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity *pNode = CreateEntityByName("adaptive_music_chased_watcher");
+            CBaseEntity * pNode = CreateEntityByName("adaptive_music_chased_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
                 auto *chasedWatcher = dynamic_cast<CAdaptiveMusicChasedWatcher *>(pNode);
@@ -226,6 +256,19 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 chasedWatcher->Activate();
             } else {
                 Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
+            }
+        } else if (!Q_strcmp(watcherType, "zone")) {
+            // Step 3, for zone watchers: find the zones key and parse it to find the zones to set
+            // Create and spawn the watcher entity, then set its params
+            CBaseEntity * pNode = CreateEntityByName("adaptive_music_zone_watcher");
+            if (pNode) {
+                DispatchSpawn(pNode);
+                auto *zoneWatcher = dynamic_cast<CAdaptiveMusicZoneWatcher *>(pNode);
+                zoneWatcher->SetAdaptiveMusicSystem(this);
+				zoneWatcher->SetZones(watcherZones);
+                zoneWatcher->Activate();
+            } else {
+                Warning("FMOD Adaptive Music - Failed to spawn a ZoneWatcher entity\n");
             }
         } else {
             Warning("FMOD Adaptive Music - Unknown watcher type: %s\n", watcherType);
