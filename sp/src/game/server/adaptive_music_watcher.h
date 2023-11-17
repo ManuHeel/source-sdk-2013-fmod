@@ -111,6 +111,37 @@ private:
 };
 
 //===========================================================================================================
+// ENTITY WATCHER
+//===========================================================================================================
+class CAdaptiveMusicEntityWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // Entity watcher
+    const char *watchedEntityClass;
+    const char *watchedEntityStatus;
+    float lastKnownEntityStatus;
+
+public:
+    DECLARE_CLASS(CAdaptiveMusicEntityWatcher, CAdaptiveMusicWatcher);
+    DECLARE_DATADESC();
+
+    explicit CAdaptiveMusicEntityWatcher();
+
+    void SetEntityClass(const char *pClass);
+
+    void SetEntityWatchedStatus(const char *pClass);
+
+    void Spawn() override;
+
+    void WatchEntityThink();
+
+    bool GetEntityStatusState(const char *entityClass, const char *status);
+
+private:
+
+};
+
+//===========================================================================================================
 // ZONE WATCHER
 //===========================================================================================================
 class CAdaptiveMusicZoneWatcher : public CAdaptiveMusicWatcher {

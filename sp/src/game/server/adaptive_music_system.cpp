@@ -175,6 +175,8 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
         // Watcher settings
         const char *watcherType = nullptr;
         const char *watcherParam = nullptr;
+        const char *watcherEntityClass = nullptr;
+        const char *watcherEntityWatchedStatus = nullptr;
         auto *watcherZones = new std::list<Zone>();
 
         // Step 1: parse all elements to gather the watcher settings
@@ -185,6 +187,10 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 watcherType = elementValue;
             } else if (!Q_strcmp(elementKey, "parameter")) {
                 watcherParam = elementValue;
+            } else if (!Q_strcmp(elementKey, "entity_class")) {
+                watcherEntityClass = elementValue;
+            } else if (!Q_strcmp(elementKey, "entity_watched_status")) {
+                watcherEntityWatchedStatus = elementValue;
             } else if (!Q_strcmp(elementKey, "zones")) {
                 // Zone list settings
                 KeyValues *zone = element->GetFirstSubKey();
@@ -256,6 +262,20 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 chasedWatcher->Activate();
             } else {
                 Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
+            }
+        } else if (!Q_strcmp(watcherType, "entity")) {
+            // Create and spawn the watcher entity, then set its params
+            CBaseEntity * pNode = CreateEntityByName("adaptive_music_entity_watcher");
+            if (pNode) {
+                DispatchSpawn(pNode);
+                auto *entityWatcher = dynamic_cast<CAdaptiveMusicEntityWatcher *>(pNode);
+                entityWatcher->SetAdaptiveMusicSystem(this);
+                entityWatcher->SetEntityClass(watcherEntityClass);
+                entityWatcher->SetEntityWatchedStatus(watcherEntityWatchedStatus);
+                entityWatcher->SetParameterName(watcherParam);
+                entityWatcher->Activate();
+            } else {
+                Warning("FMOD Adaptive Music - Failed to spawn a EntityWatcher entity\n");
             }
         } else if (!Q_strcmp(watcherType, "zone")) {
             // Step 3, for zone watchers: find the zones key and parse it to find the zones to set
