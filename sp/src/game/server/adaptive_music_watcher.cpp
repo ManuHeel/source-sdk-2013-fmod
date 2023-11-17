@@ -100,7 +100,7 @@ void CAdaptiveMusicSuitWatcher::Spawn() {
     CAdaptiveMusicWatcher::Spawn();
     Log("FMOD Suit Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicSuitWatcher::WatchSuitThink);
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
 
 void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
@@ -117,7 +117,7 @@ void CAdaptiveMusicSuitWatcher::WatchSuitThink() {
             MessageEnd();
         }
     }
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
 
 //===========================================================================================================
@@ -170,7 +170,7 @@ void CAdaptiveMusicChasedWatcher::Spawn() {
     CAdaptiveMusicWatcher::Spawn();
     Log("FMOD Chased Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicChasedWatcher::WatchChasedThink);
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
 
 void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
@@ -187,7 +187,7 @@ void CAdaptiveMusicChasedWatcher::WatchChasedThink() {
             MessageEnd();
         }
     }
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
 
 bool CAdaptiveMusicChasedWatcher::IsEnemy(const char *className) {
@@ -228,6 +228,65 @@ int CAdaptiveMusicChasedWatcher::GetChasedCount() {
 }
 
 //===========================================================================================================
+// ENTITY WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicEntityWatcher)
+                    DEFINE_THINKFUNC(WatchEntityThink),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_entity_watcher, CAdaptiveMusicEntityWatcher
+);
+
+CAdaptiveMusicEntityWatcher::CAdaptiveMusicEntityWatcher() {
+    lastKnownEntityStatus = false;
+};
+
+void CAdaptiveMusicEntityWatcher::SetEntityWatchedStatus(const char *pStatus) {
+    watchedEntityStatus = pStatus;
+}
+
+void CAdaptiveMusicEntityWatcher::SetEntityClass(const char *pClass) {
+    watchedEntityClass = pClass;
+}
+
+void CAdaptiveMusicEntityWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Entity Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicEntityWatcher::WatchEntityThink);
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+void CAdaptiveMusicEntityWatcher::WatchEntityThink() {
+    if (pAdaptiveMusicPlayer != nullptr) {
+        auto entityStatusState = static_cast<float>(CAdaptiveMusicEntityWatcher::GetEntityStatusState(watchedEntityClass,watchedEntityStatus));
+        if (entityStatusState != lastKnownEntityStatus) {
+            lastKnownEntityStatus = entityStatusState;
+            // Send a FMODSetGlobalParameter usermessage
+            CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
+            filter.MakeReliable();
+            UserMessageBegin(filter, "FMODSetGlobalParameter");
+            WRITE_STRING(parameterName);
+            WRITE_FLOAT(entityStatusState);
+            MessageEnd();
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+// Find Enemy Entities
+bool CAdaptiveMusicEntityWatcher::GetEntityStatusState(const char *entityClass, const char *status) {
+    bool entityStatusState = false;
+    CBaseEntity *pEntity = gEntList.FindEntityByClassname(NULL, entityClass);
+    if (pEntity != nullptr && !Q_strcmp(status, "exists")) {
+        entityStatusState = true;
+    } else if (pEntity != nullptr && !Q_strcmp(status, "is_alive") && pEntity->IsAlive()) {
+        entityStatusState = true;
+    }
+    return entityStatusState;
+}
+
+//===========================================================================================================
 // ZONE WATCHER
 //===========================================================================================================
 
@@ -259,13 +318,13 @@ void CAdaptiveMusicZoneWatcher::Spawn() {
     CAdaptiveMusicWatcher::Spawn();
     Log("FMOD Zone Watcher - Spawning\n");
     SetThink(&CAdaptiveMusicZoneWatcher::WatchZoneThink);
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
 
 void CAdaptiveMusicZoneWatcher::WatchZoneThink() {
     if (pAdaptiveMusicPlayer != nullptr) {
         auto currentPosition = pAdaptiveMusicPlayer->GetAbsOrigin();
-        for (CAdaptiveMusicSystem::Zone &zone : *zones) {
+        for (CAdaptiveMusicSystem::Zone &zone: *zones) {
             bool zoneStatus = IsVectorWithinZone(currentPosition, zone);
             if (zoneStatus != zone.lastKnownZoneStatus) {
                 zone.lastKnownZoneStatus = zoneStatus;
@@ -279,5 +338,5 @@ void CAdaptiveMusicZoneWatcher::WatchZoneThink() {
             }
         }
     }
-    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 5Hz
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
 }
