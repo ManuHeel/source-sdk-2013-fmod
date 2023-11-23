@@ -9,13 +9,13 @@ using namespace FMOD;
 
 CFMODManager gFMODManager;
 
-Studio::System *fmodStudioSystem;
-Studio::Bank *fmodStudioBank;
-Studio::Bank *fmodStudioStringsBank;
-Studio::EventDescription *fmodStudioEventDescription;
-Studio::EventInstance *fmodStudioEventInstance;
+Studio::System* fmodStudioSystem;
+Studio::Bank* fmodStudioBank;
+Studio::Bank* fmodStudioStringsBank;
+Studio::EventDescription* fmodStudioEventDescription;
+Studio::EventInstance* fmodStudioEventInstance;
 
-CFMODManager *FMODManager() {
+CFMODManager* FMODManager() {
     return &gFMODManager;
 }
 
@@ -33,14 +33,14 @@ CFMODManager::~CFMODManager()
 // - str2: The ending string
 // Output: The joined 2 strings
 //-----------------------------------------------------------------------------
-const char *Concatenate(const char *str1, const char *str2) {
+const char* Concatenate(const char* str1, const char* str2) {
     size_t len1 = 0;
     size_t len2 = 0;
     while (str1[len1] != '\0')
         ++len1;
     while (str2[len2] != '\0')
         ++len2;
-    char *result = new char[len1 + len2 + 1]; // +1 for the null terminator
+    char* result = new char[len1 + len2 + 1]; // +1 for the null terminator
     for (size_t i = 0; i < len1; ++i)
         result[i] = str1[i];
     for (size_t i = 0; i < len2; ++i)
@@ -48,16 +48,15 @@ const char *Concatenate(const char *str1, const char *str2) {
     result[len1 + len2] = '\0';
     return result;
 }
+
 //// END HELPER FUNCTIONS
-/*
 // EventListener
 class CFMODEventListener : public IGameEventListener2 {
-
 private:
-    CFMODManager *pFMODManager;
+    CFMODManager* pFMODManager;
 
 public:
-    CFMODEventListener(CFMODManager *pFMODManagerRef) {
+    CFMODEventListener(CFMODManager* pFMODManagerRef) {
         pFMODManager = pFMODManagerRef;
         gameeventmanager->AddListener(this, "server_shutdown", true);
     }
@@ -66,16 +65,16 @@ public:
     // Purpose: Triggered when a listened GameEvent is fired
     // Input: The fired GameEvent
     //-----------------------------------------------------------------------------
-    virtual void FireGameEvent(IGameEvent *pEvent) {
+    virtual void FireGameEvent(IGameEvent* pEvent) {
         // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
         if (Q_strcmp(pEvent->GetName(), "server_shutdown") == 0) {
             Msg("FMOD Manager - Server has shutdown, stopping all dangling events\n");
-            pAdaptiveMusicPlayer = GetAdaptiveMusicPlayer();
-            pAdaptiveMusicSystem->InitAdaptiveMusic();
+			// TODO : Do what's said!
         }
     }
 };
-*/
+
+CFMODEventListener* pFMODEventListener;
 
 //-----------------------------------------------------------------------------
 // Purpose: Provide a console command to print the FMOD Engine Status
@@ -84,7 +83,8 @@ void CC_GetStatus() {
     bool isValid = fmodStudioSystem->isValid();
     if (isValid) {
         Msg("FMOD Client - Engine is currently running\n");
-    } else {
+    }
+    else {
         Msg("FMOD Client - Engine is not running\n");
     }
 }
@@ -96,17 +96,20 @@ static ConCommand getStatus("fmod_getstatus", CC_GetStatus, "FMOD: Get current s
 // Input: The name of the FMOD Bank to load
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
-int CFMODManager::LoadBank(const char *bankName) {
+int CFMODManager::LoadBank(const char* bankName) {
     FMOD_RESULT result;
-    result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankName), FMOD_STUDIO_LOAD_BANK_NORMAL, &fmodStudioBank);
+    result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankName), FMOD_STUDIO_LOAD_BANK_NORMAL,
+                                            &fmodStudioBank);
     if (result != FMOD_OK) {
         Warning("FMOD Client - Could not load Bank (%s). Error: (%d) %s\n", bankName, result, FMOD_ErrorString(result));
         return (-1);
     }
-    const char *bankStringsName = Concatenate(bankName, ".strings");
-    result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankStringsName), FMOD_STUDIO_LOAD_BANK_NORMAL, &fmodStudioStringsBank);
+    const char* bankStringsName = Concatenate(bankName, ".strings");
+    result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankStringsName), FMOD_STUDIO_LOAD_BANK_NORMAL,
+                                            &fmodStudioStringsBank);
     if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not load Strings Bank (%s). Error: (%d) %s\n", bankStringsName, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not load Strings Bank (%s). Error: (%d) %s\n", bankStringsName, result,
+                FMOD_ErrorString(result));
         return (-1);
     }
     Log("FMOD Client - Bank successfully loaded (%s)\n", bankName);
@@ -117,7 +120,7 @@ int CFMODManager::LoadBank(const char *bankName) {
 // Purpose: Provide a console command to load a FMOD Bank
 // Input: The name of the FMOD Bank to load as ConCommand argument
 //-----------------------------------------------------------------------------
-void CC_LoadBank(const CCommand &args) {
+void CC_LoadBank(const CCommand&args) {
     if (args.ArgC() < 1 || strcmp(args.Arg(1), "") == 0) {
         Msg("Usage: fmod_loadbank <bankname>\n");
         return;
@@ -131,7 +134,7 @@ static ConCommand loadBank("fmod_loadbank", CC_LoadBank, "FMOD: Load a bank");
 // Purpose: Provide a UserMessage handler to load a FMOD Bank
 // Input: The name of the FMOD Bank to load
 //-----------------------------------------------------------------------------
-void MsgFunc_LoadBank(bf_read &msg) {
+void MsgFunc_LoadBank(bf_read&msg) {
     char szString[256];
     msg.ReadString(szString, sizeof(szString));
     CFMODManager::LoadBank(szString);
@@ -142,15 +145,16 @@ void MsgFunc_LoadBank(bf_read &msg) {
 // Input: The name of the FMOD Event to start
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
-int CFMODManager::StartEvent(const char *eventPath) {
-    const char *fullEventPath = Concatenate("event:/", eventPath);
+int CFMODManager::StartEvent(const char* eventPath) {
+    const char* fullEventPath = Concatenate("event:/", eventPath);
     FMOD_RESULT result;
     result = fmodStudioSystem->getEvent(fullEventPath, &fmodStudioEventDescription);
     result = fmodStudioEventDescription->createInstance(&fmodStudioEventInstance);
     result = fmodStudioEventInstance->start();
     fmodStudioSystem->update();
     if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not start Event (%s). Error: (%d) %s\n", eventPath, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not start Event (%s). Error: (%d) %s\n", eventPath, result,
+                FMOD_ErrorString(result));
         return (-1);
     }
     Log("FMOD Client - Event successfully started (%s)\n", eventPath);
@@ -161,7 +165,7 @@ int CFMODManager::StartEvent(const char *eventPath) {
 // Purpose: Provide a console command to start an FMOD Event
 // Input: The name of the FMOD Event to start as ConCommand argument
 //-----------------------------------------------------------------------------
-void CC_StartEvent(const CCommand &args) {
+void CC_StartEvent(const CCommand&args) {
     if (args.ArgC() < 1 || strcmp(args.Arg(1), "") == 0) {
         Msg("Usage: fmod_startevent <eventpath>\n");
         return;
@@ -175,7 +179,7 @@ static ConCommand startEvent("fmod_startevent", CC_StartEvent, "FMOD: Start an e
 // Purpose: Provide a UserMessage handler to start an FMOD Event
 // Input: The name of the FMOD Event to start
 //-----------------------------------------------------------------------------
-void MsgFunc_StartEvent(bf_read &msg) {
+void MsgFunc_StartEvent(bf_read&msg) {
     char szString[256];
     msg.ReadString(szString, sizeof(szString));
     CFMODManager::StartEvent(szString);
@@ -186,14 +190,15 @@ void MsgFunc_StartEvent(bf_read &msg) {
 // Input: The name of the FMOD Event to stop
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
-int CFMODManager::StopEvent(const char *eventPath) {
-    const char *fullEventPath = Concatenate("event:/", eventPath);
+int CFMODManager::StopEvent(const char* eventPath) {
+    const char* fullEventPath = Concatenate("event:/", eventPath);
     FMOD_RESULT result;
     result = fmodStudioSystem->getEvent(fullEventPath, &fmodStudioEventDescription);
     result = fmodStudioEventDescription->releaseAllInstances();
     fmodStudioSystem->update();
     if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not stop Event (%s). Error: (%d) %s\n", eventPath, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not stop Event (%s). Error: (%d) %s\n", eventPath, result,
+                FMOD_ErrorString(result));
         return (-1);
     }
     Log("FMOD Client - Event successfully stopped (%s)\n", eventPath);
@@ -204,7 +209,7 @@ int CFMODManager::StopEvent(const char *eventPath) {
 // Purpose: Provide a console command to stop an FMOD Event
 // Input: The name of the FMOD Event to load as ConCommand argument
 //-----------------------------------------------------------------------------
-void CC_StopEvent(const CCommand &args) {
+void CC_StopEvent(const CCommand&args) {
     if (args.ArgC() < 1 || strcmp(args.Arg(1), "") == 0) {
         Msg("Usage: fmod_stopevent <eventpath>\n");
         return;
@@ -218,7 +223,7 @@ static ConCommand stopEvent("fmod_stopevent", CC_StopEvent, "FMOD: Stop an event
 // Purpose: Provide a UserMessage handler to stop an FMOD Event
 // Input: The name of the FMOD Event to stop
 //-----------------------------------------------------------------------------
-void MsgFunc_StopEvent(bf_read &msg) {
+void MsgFunc_StopEvent(bf_read&msg) {
     char szString[256];
     msg.ReadString(szString, sizeof(szString));
     CFMODManager::StopEvent(szString);
@@ -231,13 +236,14 @@ void MsgFunc_StopEvent(bf_read &msg) {
 // - value: The value to set the FMOD Parameter to
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
-int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {
+int CFMODManager::SetGlobalParameter(const char* parameterName, float value) {
     ;
     FMOD_RESULT result;
     result = fmodStudioSystem->setParameterByName(parameterName, value);
     fmodStudioSystem->update();
     if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not set Global Parameter value (%s) (%f). Error: (%d) %s\n", parameterName, value, result, FMOD_ErrorString(result));
+        Warning("FMOD Client - Could not set Global Parameter value (%s) (%f). Error: (%d) %s\n", parameterName, value,
+                result, FMOD_ErrorString(result));
         return (-1);
     }
     Log("FMOD Client - Global Parameter %s set to %f\n", parameterName, value);
@@ -250,7 +256,7 @@ int CFMODManager::SetGlobalParameter(const char *parameterName, float value) {
 // - Arg(1): The name of the FMOD Parameter to set (to load as ConCommand argument)
 // - Arg(2): The value to set the FMOD Parameter to (to load as ConCommand argument)
 //-----------------------------------------------------------------------------
-void CC_SetGlobalParameter(const CCommand &args) {
+void CC_SetGlobalParameter(const CCommand&args) {
     if (args.ArgC() < 2 || strcmp(args.Arg(1), "") == 0 || strcmp(args.Arg(2), "") == 0) {
         Msg("Usage: fmod_setglobalparameter <parametername> <value>\n");
         return;
@@ -266,7 +272,7 @@ static ConCommand setGlobalParameter("fmod_setglobalparameter", CC_SetGlobalPara
 // - The name of the FMOD Parameter to set (to load as ConCommand argument)
 // - The value to set the FMOD Parameter to (to load as ConCommand argument)
 //-----------------------------------------------------------------------------
-void MsgFunc_SetGlobalParameter(bf_read &msg) {
+void MsgFunc_SetGlobalParameter(bf_read&msg) {
     char szString[256];
     msg.ReadString(szString, sizeof(szString));
     float szFloat;
@@ -279,7 +285,7 @@ void MsgFunc_SetGlobalParameter(bf_read &msg) {
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::StartEngine() {
-
+    pFMODEventListener = new CFMODEventListener(this);
     // Startup FMOD Studio System
     Msg("FMOD Client - Starting Engine\n");
     FMOD_RESULT result;
@@ -304,7 +310,6 @@ int CFMODManager::StartEngine() {
     Log("FMOD Client - Successfully hooked up the UserMessages\n");
 
     return (0);
-
 }
 
 //-----------------------------------------------------------------------------
@@ -328,11 +333,12 @@ int CFMODManager::StopEngine() {
 // Input: The FMOD Bank name to sanitize
 // Output: The sanitized Bank name (same as the initial if it was already ending with ".bank")
 //-----------------------------------------------------------------------------
-const char *SanitizeBankName(const char *bankName) {
-    const char *bankExtension = ".bank";
+const char* SanitizeBankName(const char* bankName) {
+    const char* bankExtension = ".bank";
     size_t bankNameLength = strlen(bankName);
     size_t bankExtensionLength = strlen(bankExtension);
-    if (bankNameLength >= bankExtensionLength && strcmp(bankName + bankNameLength - bankExtensionLength, bankExtension) == 0) {
+    if (bankNameLength >= bankExtensionLength && strcmp(bankName + bankNameLength - bankExtensionLength, bankExtension)
+        == 0) {
         return bankName;
     }
     return Concatenate(bankName, bankExtension);
@@ -343,9 +349,9 @@ const char *SanitizeBankName(const char *bankName) {
 // Input: The FMOD Bank name to locate
 // Output: The FMOD Bank's full path from the file system
 //-----------------------------------------------------------------------------
-const char *CFMODManager::GetBankPath(const char *bankName) {
-    const char *sanitizedBankName = SanitizeBankName(bankName);
-    char *bankPath = new char[512];
+const char* CFMODManager::GetBankPath(const char* bankName) {
+    const char* sanitizedBankName = SanitizeBankName(bankName);
+    char* bankPath = new char[512];
     Q_snprintf(bankPath, 512, "%s/sound/fmod/banks/%s", engine->GetGameDirectory(), sanitizedBankName);
     // convert backwards slashes to forward slashes
     for (int i = 0; i < 512; i++) {

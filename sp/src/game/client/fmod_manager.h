@@ -13,7 +13,7 @@ public:
 
     ~CFMODManager();
 
-    static int StartEngine();
+    int StartEngine();
 
     static int StopEngine();
 
