@@ -11,10 +11,10 @@ CFMODManager gFMODManager;
 
 Studio::System* fmodStudioSystem;
 Studio::Bank* loadedFmodStudioBank;
-const char* loadedFmodStudioBankName = "";
+char* loadedFmodStudioBankName;
 Studio::Bank* loadedFmodStudioStringsBank;
 Studio::EventDescription* loadedFmodStudioEventDescription;
-const char* loadedFmodStudioEventPath = "";
+char* loadedFmodStudioEventPath;
 Studio::EventInstance* createdFmodStudioEventInstance;
 
 CFMODManager* FMODManager() {
@@ -99,7 +99,7 @@ static ConCommand getStatus("fmod_getstatus", CC_GetStatus, "FMOD: Get current s
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::LoadBank(const char* bankName) {
-    if (Q_strcmp(bankName, loadedFmodStudioBankName) == 0) {
+    if (loadedFmodStudioBankName != nullptr && (strcmp(bankName, loadedFmodStudioBankName) == 0)) {
         // Bank is already loaded
         Log("FMOD Client - Bank requested for loading but already loaded (%s)\n", bankName);
     }
@@ -124,7 +124,10 @@ int CFMODManager::LoadBank(const char* bankName) {
             return (-1);
         }
         Log("FMOD Client - Bank successfully loaded (%s)\n", bankName);
-        loadedFmodStudioBankName = bankName;
+        delete[] loadedFmodStudioBankName;
+        loadedFmodStudioBankName = new char[strlen(bankName) + 1];
+        strcpy(loadedFmodStudioBankName, bankName);
+        return (0);
     }
 
     return (0);
@@ -160,7 +163,7 @@ void MsgFunc_LoadBank(bf_read&msg) {
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::StartEvent(const char* eventPath) {
-    if (Q_strcmp(eventPath, loadedFmodStudioEventPath) == 0) {
+    if (loadedFmodStudioEventPath != nullptr && (Q_strcmp(eventPath, loadedFmodStudioEventPath) == 0)) {
         // Event is already loaded
         Log("FMOD Client - Event requested for loading but already loaded (%s)\n", eventPath);
     }
@@ -177,7 +180,9 @@ int CFMODManager::StartEvent(const char* eventPath) {
             return (-1);
         }
         Log("FMOD Client - Event successfully started (%s)\n", eventPath);
-        loadedFmodStudioEventPath = eventPath;
+        delete[] loadedFmodStudioEventPath;
+        loadedFmodStudioEventPath = new char[strlen(eventPath) + 1];
+        strcpy(loadedFmodStudioEventPath, eventPath);
     }
     return (0);
 }
@@ -187,7 +192,7 @@ int CFMODManager::StartEvent(const char* eventPath) {
 // Input: The name of the FMOD Event to start as ConCommand argument
 //-----------------------------------------------------------------------------
 void CC_StartEvent(const CCommand&args) {
-    if (args.ArgC() < 1 || strcmp(args.Arg(1), "") == 0) {
+    if (args.ArgC() < 1 || Q_strcmp(args.Arg(1), "") == 0) {
         Msg("Usage: fmod_startevent <eventpath>\n");
         return;
     }
@@ -232,7 +237,7 @@ int CFMODManager::StopEvent(const char* eventPath) {
 // Input: The name of the FMOD Event to load as ConCommand argument
 //-----------------------------------------------------------------------------
 void CC_StopEvent(const CCommand&args) {
-    if (args.ArgC() < 1 || strcmp(args.Arg(1), "") == 0) {
+    if (args.ArgC() < 1 || Q_strcmp(args.Arg(1), "") == 0) {
         Msg("Usage: fmod_stopevent <eventpath>\n");
         return;
     }
@@ -279,7 +284,7 @@ int CFMODManager::SetGlobalParameter(const char* parameterName, float value) {
 // - Arg(2): The value to set the FMOD Parameter to (to load as ConCommand argument)
 //-----------------------------------------------------------------------------
 void CC_SetGlobalParameter(const CCommand&args) {
-    if (args.ArgC() < 2 || strcmp(args.Arg(1), "") == 0 || strcmp(args.Arg(2), "") == 0) {
+    if (args.ArgC() < 2 || Q_strcmp(args.Arg(1), "") == 0 || Q_strcmp(args.Arg(2), "") == 0) {
         Msg("Usage: fmod_setglobalparameter <parametername> <value>\n");
         return;
     }
@@ -359,7 +364,7 @@ const char* SanitizeBankName(const char* bankName) {
     const char* bankExtension = ".bank";
     size_t bankNameLength = strlen(bankName);
     size_t bankExtensionLength = strlen(bankExtension);
-    if (bankNameLength >= bankExtensionLength && strcmp(bankName + bankNameLength - bankExtensionLength, bankExtension)
+    if (bankNameLength >= bankExtensionLength && Q_strcmp(bankName + bankNameLength - bankExtensionLength, bankExtension)
         == 0) {
         return bankName;
     }
