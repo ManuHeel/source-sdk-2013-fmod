@@ -112,11 +112,11 @@ void CAdaptiveMusicSystem::LevelInitPostEntity() {
 // Stops the adaptive music for the level
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::LevelShutdownPreEntity() {
-    ShutDownAdaptiveMusic();
+    //ShutDownAdaptiveMusic();
 }
 
 void CAdaptiveMusicSystem::Shutdown() {
-    ShutDownAdaptiveMusic();
+    //ShutDownAdaptiveMusic();
 }
 
 //-----------------------------------------------------------------------------
@@ -133,6 +133,7 @@ void CAdaptiveMusicSystem::CalculateAdaptiveMusicState() {
     else {
         Msg("FMOD Adaptive Music - Could not find adaptive music file, '%s'\n", szFullName);
         adaptive_music_available.SetValue(false);
+        ShutDownAdaptiveMusic();
     }
 }
 
@@ -162,7 +163,6 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
             }
             else if (!Q_strcmp(elementKey, "event")) {
                 startedEventPath = elementValue;
-                ShutDownAdaptiveMusic(); // Ensure an existing music is not playing anymore (avoids piling up events)
                 Log("FMOD Adaptive Music - Telling the FMOD Client to start the event '%s'\n", startedEventPath);
                 // Send a FMODStartEvent UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);

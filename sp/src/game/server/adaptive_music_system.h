@@ -31,7 +31,7 @@ public:
     void Shutdown() override;
 
     // Set the available ConVar if we can find adaptive music data for this level
-    static void CalculateAdaptiveMusicState();
+    void CalculateAdaptiveMusicState();
 
     void ParseKeyValue(KeyValues *keyValue);
 

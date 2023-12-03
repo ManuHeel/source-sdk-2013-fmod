@@ -10,10 +10,12 @@ using namespace FMOD;
 CFMODManager gFMODManager;
 
 Studio::System* fmodStudioSystem;
-Studio::Bank* fmodStudioBank;
-Studio::Bank* fmodStudioStringsBank;
-Studio::EventDescription* fmodStudioEventDescription;
-Studio::EventInstance* fmodStudioEventInstance;
+Studio::Bank* loadedFmodStudioBank;
+const char* loadedFmodStudioBankName = "";
+Studio::Bank* loadedFmodStudioStringsBank;
+Studio::EventDescription* loadedFmodStudioEventDescription;
+const char* loadedFmodStudioEventPath = "";
+Studio::EventInstance* createdFmodStudioEventInstance;
 
 CFMODManager* FMODManager() {
     return &gFMODManager;
@@ -69,7 +71,7 @@ public:
         // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
         if (Q_strcmp(pEvent->GetName(), "server_shutdown") == 0) {
             Msg("FMOD Manager - Server has shutdown, stopping all dangling events\n");
-			// TODO : Do what's said!
+            CFMODManager::StopEvent(loadedFmodStudioEventPath);
         }
     }
 };
@@ -97,22 +99,34 @@ static ConCommand getStatus("fmod_getstatus", CC_GetStatus, "FMOD: Get current s
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::LoadBank(const char* bankName) {
-    FMOD_RESULT result;
-    result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankName), FMOD_STUDIO_LOAD_BANK_NORMAL,
-                                            &fmodStudioBank);
-    if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not load Bank (%s). Error: (%d) %s\n", bankName, result, FMOD_ErrorString(result));
-        return (-1);
+    if (Q_strcmp(bankName, loadedFmodStudioBankName) == 0) {
+        // Bank is already loaded
+        Log("FMOD Client - Bank requested for loading but already loaded (%s)\n", bankName);
     }
-    const char* bankStringsName = Concatenate(bankName, ".strings");
-    result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankStringsName), FMOD_STUDIO_LOAD_BANK_NORMAL,
-                                            &fmodStudioStringsBank);
-    if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not load Strings Bank (%s). Error: (%d) %s\n", bankStringsName, result,
-                FMOD_ErrorString(result));
-        return (-1);
+    else {
+        // Load the requested bank
+        const char* bankPath = CFMODManager::GetBankPath(bankName);
+        FMOD_RESULT result;
+        result = fmodStudioSystem->loadBankFile(bankPath, FMOD_STUDIO_LOAD_BANK_NORMAL,
+                                                &loadedFmodStudioBank);
+        if (result != FMOD_OK) {
+            Warning("FMOD Client - Could not load Bank (%s). Error: (%d) %s\n", bankName, result,
+                    FMOD_ErrorString(result));
+            return (-1);
+        }
+        const char* bankStringsName = Concatenate(bankName, ".strings");
+        result = fmodStudioSystem->loadBankFile(CFMODManager::GetBankPath(bankStringsName),
+                                                FMOD_STUDIO_LOAD_BANK_NORMAL,
+                                                &loadedFmodStudioStringsBank);
+        if (result != FMOD_OK) {
+            Warning("FMOD Client - Could not load Strings Bank (%s). Error: (%d) %s\n", bankStringsName, result,
+                    FMOD_ErrorString(result));
+            return (-1);
+        }
+        Log("FMOD Client - Bank successfully loaded (%s)\n", bankName);
+        loadedFmodStudioBankName = bankName;
     }
-    Log("FMOD Client - Bank successfully loaded (%s)\n", bankName);
+
     return (0);
 }
 
@@ -146,18 +160,25 @@ void MsgFunc_LoadBank(bf_read&msg) {
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::StartEvent(const char* eventPath) {
-    const char* fullEventPath = Concatenate("event:/", eventPath);
-    FMOD_RESULT result;
-    result = fmodStudioSystem->getEvent(fullEventPath, &fmodStudioEventDescription);
-    result = fmodStudioEventDescription->createInstance(&fmodStudioEventInstance);
-    result = fmodStudioEventInstance->start();
-    fmodStudioSystem->update();
-    if (result != FMOD_OK) {
-        Warning("FMOD Client - Could not start Event (%s). Error: (%d) %s\n", eventPath, result,
-                FMOD_ErrorString(result));
-        return (-1);
+    if (Q_strcmp(eventPath, loadedFmodStudioEventPath) == 0) {
+        // Event is already loaded
+        Log("FMOD Client - Event requested for loading but already loaded (%s)\n", eventPath);
     }
-    Log("FMOD Client - Event successfully started (%s)\n", eventPath);
+    else {
+        const char* fullEventPath = Concatenate("event:/", eventPath);
+        FMOD_RESULT result;
+        result = fmodStudioSystem->getEvent(fullEventPath, &loadedFmodStudioEventDescription);
+        result = loadedFmodStudioEventDescription->createInstance(&createdFmodStudioEventInstance);
+        result = createdFmodStudioEventInstance->start();
+        fmodStudioSystem->update();
+        if (result != FMOD_OK) {
+            Warning("FMOD Client - Could not start Event (%s). Error: (%d) %s\n", eventPath, result,
+                    FMOD_ErrorString(result));
+            return (-1);
+        }
+        Log("FMOD Client - Event successfully started (%s)\n", eventPath);
+        loadedFmodStudioEventPath = eventPath;
+    }
     return (0);
 }
 
@@ -193,8 +214,8 @@ void MsgFunc_StartEvent(bf_read&msg) {
 int CFMODManager::StopEvent(const char* eventPath) {
     const char* fullEventPath = Concatenate("event:/", eventPath);
     FMOD_RESULT result;
-    result = fmodStudioSystem->getEvent(fullEventPath, &fmodStudioEventDescription);
-    result = fmodStudioEventDescription->releaseAllInstances();
+    result = fmodStudioSystem->getEvent(fullEventPath, &loadedFmodStudioEventDescription);
+    result = loadedFmodStudioEventDescription->releaseAllInstances();
     fmodStudioSystem->update();
     if (result != FMOD_OK) {
         Warning("FMOD Client - Could not stop Event (%s). Error: (%d) %s\n", eventPath, result,
@@ -202,6 +223,7 @@ int CFMODManager::StopEvent(const char* eventPath) {
         return (-1);
     }
     Log("FMOD Client - Event successfully stopped (%s)\n", eventPath);
+    loadedFmodStudioEventPath = "";
     return (0);
 }
 
