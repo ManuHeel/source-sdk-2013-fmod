@@ -61,6 +61,7 @@ public:
     CFMODEventListener(CFMODManager* pFMODManagerRef) {
         pFMODManager = pFMODManagerRef;
         gameeventmanager->AddListener(this, "server_shutdown", true);
+        gameeventmanager->AddListener(this, "game_newmap", false);
     }
 
     //-----------------------------------------------------------------------------
@@ -68,10 +69,9 @@ public:
     // Input: The fired GameEvent
     //-----------------------------------------------------------------------------
     virtual void FireGameEvent(IGameEvent* pEvent) {
-        // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
-        if (Q_strcmp(pEvent->GetName(), "server_shutdown") == 0) {
-            Msg("FMOD Manager - Server has shutdown, stopping all dangling events\n");
-            CFMODManager::StopEvent(loadedFmodStudioEventPath);
+        if (Q_strcmp(pEvent->GetName(), "game_newmap") == 0) {
+            Msg("FMOD Manager - Client in a new map\n");
+            //CFMODManager::StopEvent(loadedFmodStudioEventPath);
         }
     }
 };
@@ -168,6 +168,11 @@ int CFMODManager::StartEvent(const char* eventPath) {
         Log("FMOD Client - Event requested for loading but already loaded (%s)\n", eventPath);
     }
     else {
+        // Event is new
+        if (loadedFmodStudioEventPath != nullptr && (Q_strcmp(loadedFmodStudioEventPath, "") != 0)) {
+            // Stop the currently playing event
+            StopEvent(loadedFmodStudioEventPath);
+        }
         const char* fullEventPath = Concatenate("event:/", eventPath);
         FMOD_RESULT result;
         result = fmodStudioSystem->getEvent(fullEventPath, &loadedFmodStudioEventDescription);
@@ -228,7 +233,9 @@ int CFMODManager::StopEvent(const char* eventPath) {
         return (-1);
     }
     Log("FMOD Client - Event successfully stopped (%s)\n", eventPath);
-    loadedFmodStudioEventPath = "";
+    delete[] loadedFmodStudioEventPath;
+    loadedFmodStudioEventPath = new char[strlen("") + 1];
+    strcpy(loadedFmodStudioEventPath, "");
     return (0);
 }
 
