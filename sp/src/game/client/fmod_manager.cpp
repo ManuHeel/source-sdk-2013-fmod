@@ -62,6 +62,7 @@ public:
         pFMODManager = pFMODManagerRef;
         gameeventmanager->AddListener(this, "server_shutdown", true);
         gameeventmanager->AddListener(this, "game_newmap", false);
+        gameeventmanager->AddListener(this, "player_disconnect", false);
     }
 
     //-----------------------------------------------------------------------------
@@ -69,9 +70,11 @@ public:
     // Input: The fired GameEvent
     //-----------------------------------------------------------------------------
     virtual void FireGameEvent(IGameEvent* pEvent) {
-        if (Q_strcmp(pEvent->GetName(), "game_newmap") == 0) {
-            Msg("FMOD Manager - Client in a new map\n");
-            //CFMODManager::StopEvent(loadedFmodStudioEventPath);
+        if (Q_strcmp(pEvent->GetName(), "player_disconnect") == 0) {
+            Msg("FMOD Manager - Player disconnected\n");
+            // The player disconnected, so it's not going from a map to another but rather restarting a game or quitting the game (going back to the menu)
+            // Therefore we stop the playing event
+            CFMODManager::StopEvent(loadedFmodStudioEventPath);
         }
     }
 };
