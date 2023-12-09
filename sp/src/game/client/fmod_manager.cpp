@@ -4,6 +4,8 @@
 #include "fmod_errors.h"
 #include "convar.h"
 #include "usermessages.h"
+#include "thread"
+#include "chrono"
 
 using namespace FMOD;
 
@@ -80,6 +82,41 @@ public:
 };
 
 CFMODEventListener* pFMODEventListener;
+
+// Function that runs in a separate thread
+bool runThread = false;
+void InfiniteLoopFunction()
+{
+    bool lastKnownPausedState = false;
+    while (runThread)
+    {
+        bool isPaused = engine->IsPaused();
+        if (isPaused != lastKnownPausedState ) {
+            lastKnownPausedState = isPaused;
+            CFMODManager::SetPausedState(isPaused);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 0.1 seconds
+    }
+}
+
+// Function to start the thread
+void StartInfiniteLoopThread()
+{
+
+    runThread = true;
+
+    // Create a thread and launch the InfiniteLoopFunction
+    std::thread loopThread(InfiniteLoopFunction);
+
+    // Detach the thread, allowing it to run independently
+    loopThread.detach();
+}
+
+// Function to start the thread
+void StopInfiniteLoopThread()
+{
+    runThread = false;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Provide a console command to print the FMOD Engine Status
@@ -346,6 +383,9 @@ int CFMODManager::StartEngine() {
     usermessages->HookMessage("FMODSetGlobalParameter", MsgFunc_SetGlobalParameter);
     Log("FMOD Client - Successfully hooked up the UserMessages\n");
 
+    // Start the infinitely-looping Client-Side watcher
+    StartInfiniteLoopThread();
+
     return (0);
 }
 
@@ -362,6 +402,34 @@ int CFMODManager::StopEngine() {
         return (-1);
     }
     Log("FMOD Client - Engine successfully stopped\n");
+
+    // Stop the infinitely-looping Client-Side watcher
+    StopInfiniteLoopThread();
+
+    return (0);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: TODO
+// Output: TODO
+//-----------------------------------------------------------------------------
+int CFMODManager::SetPausedState(bool pausedState) {
+    Msg("FMOD Client - Setting master bus paused state to %d\n", pausedState);
+    Studio::Bus *bus;
+    FMOD_RESULT result;
+    result = fmodStudioSystem->getBus("bus:/", &bus);
+    if (result != FMOD_OK) {
+        Msg("FMOD Client - Could not find the master bus! (%d) %s\n", result, FMOD_ErrorString(result));
+        return (-1);
+    }
+    result = bus->setPaused(pausedState);
+	fmodStudioSystem->update();
+    if (result != FMOD_OK) {
+        Msg("FMOD Client - Could not pause the master bus! (%d) %s\n", result, FMOD_ErrorString(result));
+        return (-1);
+    }
+    Log("FMOD Client - Bus successfully paused\n");
+
     return (0);
 }
 
