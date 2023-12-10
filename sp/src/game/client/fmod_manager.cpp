@@ -54,68 +54,36 @@ const char* Concatenate(const char* str1, const char* str2) {
 }
 
 //// END HELPER FUNCTIONS
-// EventListener
-class CFMODEventListener : public IGameEventListener2 {
-private:
-    CFMODManager* pFMODManager;
-
-public:
-    CFMODEventListener(CFMODManager* pFMODManagerRef) {
-        pFMODManager = pFMODManagerRef;
-        gameeventmanager->AddListener(this, "server_shutdown", true);
-        gameeventmanager->AddListener(this, "game_newmap", false);
-        gameeventmanager->AddListener(this, "player_disconnect", false);
-    }
-
-    //-----------------------------------------------------------------------------
-    // Purpose: Triggered when a listened GameEvent is fired
-    // Input: The fired GameEvent
-    //-----------------------------------------------------------------------------
-    virtual void FireGameEvent(IGameEvent* pEvent) {
-        if (Q_strcmp(pEvent->GetName(), "player_disconnect") == 0) {
-            Msg("FMOD Manager - Player disconnected\n");
-            // The player disconnected, so it's not going from a map to another but rather restarting a game or quitting the game (going back to the menu)
-            // Therefore we stop the playing event
-            CFMODManager::StopEvent(loadedFmodStudioEventPath);
-        }
-    }
-};
-
-CFMODEventListener* pFMODEventListener;
 
 // Function that runs in a separate thread
-bool runThread = false;
-void InfiniteLoopFunction()
-{
+bool runClientSideWatcher = false;
+
+void ClientSideWatcher() {
     bool lastKnownPausedState = false;
-    while (runThread)
-    {
-        bool isPaused = engine->IsPaused();
-        if (isPaused != lastKnownPausedState ) {
+    while (runClientSideWatcher) {
+        const bool isPaused = engine->IsPaused();
+        if (isPaused != lastKnownPausedState && fmodStudioBank != nullptr) {
             lastKnownPausedState = isPaused;
             CFMODManager::SetPausedState(isPaused);
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 0.1 seconds
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Sleep for 0.05 seconds
     }
 }
 
 // Function to start the thread
-void StartInfiniteLoopThread()
-{
-
-    runThread = true;
-
-    // Create a thread and launch the InfiniteLoopFunction
-    std::thread loopThread(InfiniteLoopFunction);
-
+void StartClientSideWatcher() {
+    runClientSideWatcher = true;
+    std::thread loopThread(ClientSideWatcher);
     // Detach the thread, allowing it to run independently
     loopThread.detach();
 }
 
 // Function to start the thread
-void StopInfiniteLoopThread()
-{
-    runThread = false;
+void StopClientSideWatcher() {
+    runClientSideWatcher = false;
+    /* TODO: Currently the Client-Side watcher is probably not killed properly because it causes the game to crash on...
+     * TODO: ...exiting. The game breaks at sp/src/game/client/hud.cpp:222 (I don't know why)
+     */
 }
 
 //-----------------------------------------------------------------------------
@@ -359,7 +327,6 @@ void MsgFunc_SetGlobalParameter(bf_read&msg) {
 // Output: The error code (or 0 if no error was encountered)
 //-----------------------------------------------------------------------------
 int CFMODManager::StartEngine() {
-    pFMODEventListener = new CFMODEventListener(this);
     // Startup FMOD Studio System
     Msg("FMOD Client - Starting Engine\n");
     FMOD_RESULT result;
@@ -384,7 +351,7 @@ int CFMODManager::StartEngine() {
     Log("FMOD Client - Successfully hooked up the UserMessages\n");
 
     // Start the infinitely-looping Client-Side watcher
-    StartInfiniteLoopThread();
+    StartClientSideWatcher();
 
     return (0);
 }
@@ -404,7 +371,7 @@ int CFMODManager::StopEngine() {
     Log("FMOD Client - Engine successfully stopped\n");
 
     // Stop the infinitely-looping Client-Side watcher
-    StopInfiniteLoopThread();
+    StopClientSideWatcher();
 
     return (0);
 }
@@ -415,7 +382,7 @@ int CFMODManager::StopEngine() {
 //-----------------------------------------------------------------------------
 int CFMODManager::SetPausedState(bool pausedState) {
     Msg("FMOD Client - Setting master bus paused state to %d\n", pausedState);
-    Studio::Bus *bus;
+    Studio::Bus* bus;
     FMOD_RESULT result;
     result = fmodStudioSystem->getBus("bus:/", &bus);
     if (result != FMOD_OK) {
@@ -423,7 +390,7 @@ int CFMODManager::SetPausedState(bool pausedState) {
         return (-1);
     }
     result = bus->setPaused(pausedState);
-	fmodStudioSystem->update();
+    fmodStudioSystem->update();
     if (result != FMOD_OK) {
         Msg("FMOD Client - Could not pause the master bus! (%d) %s\n", result, FMOD_ErrorString(result));
         return (-1);
