@@ -428,7 +428,6 @@ int CFMODManager::SetPausedState(bool pausedState) {
         Msg("FMOD Client - Could not pause the master bus! (%d) %s\n", result, FMOD_ErrorString(result));
         return (-1);
     }
-    Log("FMOD Client - Bus successfully paused\n");
 
     return (0);
 }
