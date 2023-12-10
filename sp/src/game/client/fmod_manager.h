@@ -25,6 +25,8 @@ public:
 
     static int SetGlobalParameter(const char *parameterName, float value);
 
+    static int SetPausedState(bool pausedState);
+
     static const char *GetBankPath(const char *bankName);
 
 };
