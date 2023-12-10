@@ -8,6 +8,8 @@
 #include "adaptive_music_system.h"
 #include "adaptive_music_watcher.h"
 
+#include "../shared/choreoscene.h"
+
 
 //===========================================================================================================
 // BASE WATCHER
@@ -246,6 +248,10 @@ void CAdaptiveMusicEntityWatcher::SetEntityWatchedStatus(const char *pStatus) {
     watchedEntityStatus = pStatus;
 }
 
+void CAdaptiveMusicEntityWatcher::SetEntityWatchedScene(const char *pScene) {
+    watchedEntityScene = pScene;
+}
+
 void CAdaptiveMusicEntityWatcher::SetEntityClass(const char *pClass) {
     watchedEntityClass = pClass;
 }
@@ -282,6 +288,8 @@ bool CAdaptiveMusicEntityWatcher::GetEntityStatusState(const char *entityClass, 
         entityStatusState = true;
     } else if (pEntity != nullptr && !Q_strcmp(status, "is_alive") && pEntity->IsAlive()) {
         entityStatusState = true;
+    } else if (pEntity != nullptr && !Q_strcmp(status, "scene")) {
+         // CChoreoScene* pChoreoScene = pEntity->; // TODO find a way to get the ChoreoScene
     }
     return entityStatusState;
 }
@@ -336,6 +344,45 @@ void CAdaptiveMusicZoneWatcher::WatchZoneThink() {
                 WRITE_FLOAT(zoneStatus);
                 MessageEnd();
             }
+        }
+    }
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+//===========================================================================================================
+// SCENE WATCHER
+//===========================================================================================================
+
+BEGIN_DATADESC(CAdaptiveMusicSceneWatcher)
+                    DEFINE_THINKFUNC(WatchSceneThink),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS(adaptive_music_scene_watcher, CAdaptiveMusicSceneWatcher
+);
+
+CAdaptiveMusicSceneWatcher::CAdaptiveMusicSceneWatcher() {
+};
+
+void CAdaptiveMusicSceneWatcher::SetScenes(std::list<CAdaptiveMusicSystem::Scene> *scenesRef) {
+    scenes = scenesRef;
+}
+
+void CAdaptiveMusicSceneWatcher::Spawn() {
+    CAdaptiveMusicWatcher::Spawn();
+    Log("FMOD Scene Watcher - Spawning\n");
+    SetThink(&CAdaptiveMusicSceneWatcher::WatchSceneThink);
+    SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz
+}
+
+void CAdaptiveMusicSceneWatcher::WatchSceneThink() {
+    if (pAdaptiveMusicPlayer != nullptr) {
+        for (CAdaptiveMusicSystem::Scene &scene: *scenes) {
+            CBaseEntity *pEntity = gEntList.FindEntityByName(NULL, scene.sceneName);
+            if (pEntity == nullptr) {
+                break;
+            }
+            auto* pScene = dynamic_cast<CChoreoScene *>(pEntity);
+            //Msg(pScene->GetEvent);
         }
     }
     SetNextThink(gpGlobals->curtime + 0.1f); // Think at 10Hz

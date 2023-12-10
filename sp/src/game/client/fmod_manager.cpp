@@ -388,7 +388,7 @@ int CFMODManager::StopEngine() {
 // Output: TODO
 //-----------------------------------------------------------------------------
 int CFMODManager::SetPausedState(bool pausedState) {
-    Msg("FMOD Client - Setting master bus paused state to %d\n", pausedState);
+    Log("FMOD Client - Setting master bus paused state to %d\n", pausedState);
     Studio::Bus* bus;
     FMOD_RESULT result;
     result = fmodStudioSystem->getBus("bus:/", &bus);

@@ -119,6 +119,7 @@ protected:
     // Entity watcher
     const char *watchedEntityClass;
     const char *watchedEntityStatus;
+    const char *watchedEntityScene;
     float lastKnownEntityStatus;
 
 public:
@@ -130,6 +131,8 @@ public:
     void SetEntityClass(const char *pClass);
 
     void SetEntityWatchedStatus(const char *pClass);
+
+    void SetEntityWatchedScene(const char *pClass);
 
     void Spawn() override;
 
@@ -161,6 +164,31 @@ public:
     void Spawn() override;
 
     void WatchZoneThink();
+
+private:
+
+};
+
+//===========================================================================================================
+// SCENE WATCHER
+//===========================================================================================================
+class CAdaptiveMusicSceneWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // LCS watcher
+    std::list<CAdaptiveMusicSystem::Scene> *scenes;
+
+public:
+    DECLARE_CLASS(CAdaptiveMusicSceneWatcher, CAdaptiveMusicWatcher);
+    DECLARE_DATADESC();
+
+    explicit CAdaptiveMusicSceneWatcher();
+
+    void SetScenes(std::list<CAdaptiveMusicSystem::Scene> *scenesRef);
+
+    void Spawn() override;
+
+    void WatchSceneThink();
 
 private:
 

@@ -49,6 +49,14 @@ public:
         bool lastKnownZoneStatus = false;
     };
 
+    // Struct for holding Scene data
+    struct Scene {
+        const char *sceneName;
+        const char *stateName;
+        const char *parameterName;
+        bool lastKnownSceneStateStatus = false;
+    };
+
 };
 
 extern CAdaptiveMusicSystem *AdaptiveMusicSystem();

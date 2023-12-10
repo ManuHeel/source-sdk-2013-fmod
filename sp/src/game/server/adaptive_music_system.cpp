@@ -183,7 +183,9 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
         const char* watcherParam = nullptr;
         const char* watcherEntityClass = nullptr;
         const char* watcherEntityWatchedStatus = nullptr;
+        const char* watcherEntityWatchedScene = nullptr;
         auto* watcherZones = new std::list<Zone>();
+        auto* watcherScenes = new std::list<Scene>();
 
         // Step 1: parse all elements to gather the watcher settings
         while (element) {
@@ -200,6 +202,9 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
             }
             else if (!Q_strcmp(elementKey, "entity_watched_status")) {
                 watcherEntityWatchedStatus = elementValue;
+            }
+            else if (!Q_strcmp(elementKey, "entity_watched_scene")) {
+                watcherEntityWatchedScene = elementValue;
             }
             else if (!Q_strcmp(elementKey, "zones")) {
                 // Zone list settings
@@ -230,6 +235,37 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
                         Warning("FMOD Adaptive Music - Found an unknown \"zones\" subkey in file\n");
                     }
                     zone = zone->GetNextKey();
+                }
+            }
+            else if (!Q_strcmp(elementKey, "scenes")) {
+                // Scene list settings
+                KeyValues* scene = element->GetFirstSubKey();
+                while (scene) {
+                    const char* sceneKey = scene->GetName();
+                    if (!Q_strcmp(sceneKey, "scene")) {
+                        KeyValues* sceneElement = scene->GetFirstSubKey();
+                        // Create a new Scene struct
+                        Scene pScene;
+                        while (sceneElement) {
+                            const char* sceneElementKey = sceneElement->GetName();
+                            const char* sceneElementValue = sceneElement->GetString();
+                            if (!Q_strcmp(sceneElementKey, "scene_name")) {
+                                pScene.sceneName = sceneElementValue;
+                            }
+                            else if (!Q_strcmp(sceneElementKey, "scene_state")) {
+                                pScene.stateName = sceneElementValue;
+                            }
+                            else if (!Q_strcmp(sceneElementKey, "parameter")) {
+                                pScene.parameterName = sceneElementValue;
+                            }
+                            sceneElement = sceneElement->GetNextKey();
+                        }
+                        watcherScenes->push_back(pScene);
+                    }
+                    else {
+                        Warning("FMOD Adaptive Music - Found an unknown \"scenes\" subkey in file\n");
+                    }
+                    scene = scene->GetNextKey();
                 }
             }
             element = element->GetNextKey();
@@ -291,6 +327,7 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
                 entityWatcher->SetAdaptiveMusicSystem(this);
                 entityWatcher->SetEntityClass(watcherEntityClass);
                 entityWatcher->SetEntityWatchedStatus(watcherEntityWatchedStatus);
+                entityWatcher->SetEntityWatchedScene(watcherEntityWatchedScene);
                 entityWatcher->SetParameterName(watcherParam);
                 entityWatcher->Activate();
             }
@@ -308,6 +345,21 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
                 zoneWatcher->SetAdaptiveMusicSystem(this);
                 zoneWatcher->SetZones(watcherZones);
                 zoneWatcher->Activate();
+            }
+            else {
+                Warning("FMOD Adaptive Music - Failed to spawn a ZoneWatcher entity\n");
+            }
+        }
+        else if (!Q_strcmp(watcherType, "scene")) {
+            // Step 3, for scene watchers: find the scenes key and parse it to find the scenes to set
+            // Create and spawn the watcher entity, then set its params
+            CBaseEntity* pNode = CreateEntityByName("adaptive_music_scene_watcher");
+            if (pNode) {
+                DispatchSpawn(pNode);
+                auto* sceneWatcher = dynamic_cast<CAdaptiveMusicSceneWatcher *>(pNode);
+                sceneWatcher->SetAdaptiveMusicSystem(this);
+                sceneWatcher->SetScenes(watcherScenes);
+                sceneWatcher->Activate();
             }
             else {
                 Warning("FMOD Adaptive Music - Failed to spawn a ZoneWatcher entity\n");
