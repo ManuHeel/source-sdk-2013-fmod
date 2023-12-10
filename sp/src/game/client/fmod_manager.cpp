@@ -61,10 +61,17 @@ bool runClientSideWatcher = false;
 void ClientSideWatcher() {
     bool lastKnownPausedState = false;
     while (runClientSideWatcher) {
+        // Pause check
         const bool isPaused = engine->IsPaused();
-        if (isPaused != lastKnownPausedState && fmodStudioBank != nullptr) {
+        if (isPaused != lastKnownPausedState && loadedFmodStudioBank != nullptr) {
             lastKnownPausedState = isPaused;
             CFMODManager::SetPausedState(isPaused);
+        }
+        // InGame check
+        const bool isInGame = engine->IsInGame();
+        if (!isInGame && loadedFmodStudioEventPath != nullptr && Q_strcmp(loadedFmodStudioEventPath, "") != 0) {
+            // The player is not in game but there is a playing event. This is not intended thus we kill the event
+            CFMODManager::StopEvent(loadedFmodStudioEventPath);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Sleep for 0.05 seconds
     }
