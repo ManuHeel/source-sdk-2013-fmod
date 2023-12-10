@@ -19,15 +19,15 @@
 // ADAPTIVE MUSIC GAME SYSTEM
 //===========================================================================================================
 
-ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE, "Automatically set by the game when an adaptive music file is available for the current map.");
+ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE,
+                                "Automatically set by the game when an adaptive music file is available for the current map.");
 
-class CFMODEventListener : public IGameEventListener2 {
-
+class CAdaptiveMusicEventListener : public IGameEventListener2 {
 private:
-    CAdaptiveMusicSystem *pAdaptiveMusicSystem;
+    CAdaptiveMusicSystem* pAdaptiveMusicSystem;
 
 public:
-    explicit CFMODEventListener(CAdaptiveMusicSystem *pAdaptiveMusicSystemRef) {
+    explicit CAdaptiveMusicEventListener(CAdaptiveMusicSystem* pAdaptiveMusicSystemRef) {
         pAdaptiveMusicSystem = pAdaptiveMusicSystemRef;
         gameeventmanager->AddListener(this, "player_spawn", true);
     }
@@ -36,7 +36,7 @@ public:
     // Purpose: Triggered when a listened GameEvent is fired
     // Input: The fired GameEvent
     //-----------------------------------------------------------------------------
-    void FireGameEvent(IGameEvent *pEvent) override {
+    void FireGameEvent(IGameEvent* pEvent) override {
         // When the player is spawned, set the pAdaptiveMusicPlayer for future reference and initialize the music
         if (Q_strcmp(pEvent->GetName(), "player_spawn") == 0) {
             Msg("FMOD Adaptive Music - Player spawned, initializing Adaptive Music\n");
@@ -46,21 +46,22 @@ public:
     }
 };
 
-CFMODEventListener *pFMODEventListener;
+CAdaptiveMusicEventListener* pAdaptiveMusicEventListener;
 
-const char *loadedBankName;
-const char *startedEventPath;
+const char* loadedBankName;
+const char* startedEventPath;
 
 //-----------------------------------------------------------------------------
 // Purpose: Get the Adaptive Music Player
 // Output: Pointer to a CBasePlayer of the main Player
 //-----------------------------------------------------------------------------
-CBasePlayer *CAdaptiveMusicSystem::SetAdaptiveMusicPlayer() {
-    CBasePlayer *pPlayer;
+CBasePlayer* CAdaptiveMusicSystem::SetAdaptiveMusicPlayer() {
+    CBasePlayer* pPlayer;
 
     if (gpGlobals->maxClients <= 1) {
         pPlayer = UTIL_GetLocalPlayer();
-    } else {
+    }
+    else {
         // only respond to the first player
         pPlayer = UTIL_PlayerByIndex(1);
     }
@@ -78,7 +79,7 @@ CAdaptiveMusicSystem::CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSy
 //-----------------------------------------------------------------------------
 bool CAdaptiveMusicSystem::Init() {
     Msg("FMOD Adaptive Music - Start FMOD event listener\n");
-    pFMODEventListener = new CFMODEventListener(this);
+    pAdaptiveMusicEventListener = new CAdaptiveMusicEventListener(this);
     return true;
 }
 
@@ -111,11 +112,11 @@ void CAdaptiveMusicSystem::LevelInitPostEntity() {
 // Stops the adaptive music for the level
 //-----------------------------------------------------------------------------
 void CAdaptiveMusicSystem::LevelShutdownPreEntity() {
-    ShutDownAdaptiveMusic();
+    //ShutDownAdaptiveMusic();
 }
 
 void CAdaptiveMusicSystem::Shutdown() {
-    ShutDownAdaptiveMusic();
+    //ShutDownAdaptiveMusic();
 }
 
 //-----------------------------------------------------------------------------
@@ -128,9 +129,11 @@ void CAdaptiveMusicSystem::CalculateAdaptiveMusicState() {
     if (filesystem->FileExists(szFullName)) {
         Msg("FMOD Adaptive Music - Found adaptive music file, '%s'\n", szFullName);
         adaptive_music_available.SetValue(true);
-    } else {
+    }
+    else {
         Msg("FMOD Adaptive Music - Could not find adaptive music file, '%s'\n", szFullName);
         adaptive_music_available.SetValue(false);
+        ShutDownAdaptiveMusic();
     }
 }
 
@@ -138,14 +141,15 @@ void CAdaptiveMusicSystem::CalculateAdaptiveMusicState() {
 // Purpose: Parses the provided KeyValue containing adaptive music data from a file
 // Input: A KeyValue object, subset of an adaptive music file
 //-----------------------------------------------------------------------------
-void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
-    const char *keyValueName = keyValue->GetName();
+void CAdaptiveMusicSystem::ParseKeyValue(KeyValues* keyValue) {
+    const char* keyValueName = keyValue->GetName();
     Log("FMOD Adaptive Music - Parsing the KeyValue '%s'\n", keyValueName);
-    if (!Q_strcmp(keyValueName, "globals")) { // The key-value element is defining the global parameters of the map
-        KeyValues *element = keyValue->GetFirstSubKey();
+    if (!Q_strcmp(keyValueName, "globals")) {
+        // The key-value element is defining the global parameters of the map
+        KeyValues* element = keyValue->GetFirstSubKey();
         while (element) {
-            const char *elementKey = element->GetName();
-            const char *elementValue = element->GetString();
+            const char* elementKey = element->GetName();
+            const char* elementValue = element->GetString();
             Log("FMOD Adaptive Music - %s: %s\n", elementKey, elementValue);
             if (!Q_strcmp(elementKey, "bank")) {
                 loadedBankName = elementValue;
@@ -156,9 +160,9 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
                 UserMessageBegin(filter, "FMODLoadBank");
                 WRITE_STRING(elementValue);
                 MessageEnd();
-            } else if (!Q_strcmp(elementKey, "event")) {
+            }
+            else if (!Q_strcmp(elementKey, "event")) {
                 startedEventPath = elementValue;
-                ShutDownAdaptiveMusic(); // Ensure an existing music is not playing anymore (avoids piling up events)
                 Log("FMOD Adaptive Music - Telling the FMOD Client to start the event '%s'\n", startedEventPath);
                 // Send a FMODStartEvent UserMessage
                 CSingleUserRecipientFilter filter(pAdaptiveMusicPlayer);
@@ -169,54 +173,63 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
             }
             element = element->GetNextKey();
         }
-    } else if (!Q_strcmp(keyValueName, "watcher")) { // The key-value element is defining a watcher and its params for the map
-        KeyValues *element = keyValue->GetFirstSubKey();
+    }
+    else if (!Q_strcmp(keyValueName, "watcher")) {
+        // The key-value element is defining a watcher and its params for the map
+        KeyValues* element = keyValue->GetFirstSubKey();
 
         // Watcher settings
-        const char *watcherType = nullptr;
-        const char *watcherParam = nullptr;
-        const char *watcherEntityClass = nullptr;
-        const char *watcherEntityWatchedStatus = nullptr;
-        auto *watcherZones = new std::list<Zone>();
+        const char* watcherType = nullptr;
+        const char* watcherParam = nullptr;
+        const char* watcherEntityClass = nullptr;
+        const char* watcherEntityWatchedStatus = nullptr;
+        auto* watcherZones = new std::list<Zone>();
 
         // Step 1: parse all elements to gather the watcher settings
         while (element) {
-            const char *elementKey = element->GetName();
-            const char *elementValue = element->GetString();
+            const char* elementKey = element->GetName();
+            const char* elementValue = element->GetString();
             if (!Q_strcmp(elementKey, "type")) {
                 watcherType = elementValue;
-            } else if (!Q_strcmp(elementKey, "parameter")) {
+            }
+            else if (!Q_strcmp(elementKey, "parameter")) {
                 watcherParam = elementValue;
-            } else if (!Q_strcmp(elementKey, "entity_class")) {
+            }
+            else if (!Q_strcmp(elementKey, "entity_class")) {
                 watcherEntityClass = elementValue;
-            } else if (!Q_strcmp(elementKey, "entity_watched_status")) {
+            }
+            else if (!Q_strcmp(elementKey, "entity_watched_status")) {
                 watcherEntityWatchedStatus = elementValue;
-            } else if (!Q_strcmp(elementKey, "zones")) {
+            }
+            else if (!Q_strcmp(elementKey, "zones")) {
                 // Zone list settings
-                KeyValues *zone = element->GetFirstSubKey();
+                KeyValues* zone = element->GetFirstSubKey();
                 while (zone) {
-                    const char *zoneKey = zone->GetName();
+                    const char* zoneKey = zone->GetName();
                     if (!Q_strcmp(zoneKey, "zone")) {
-                        KeyValues *zoneElement = zone->GetFirstSubKey();
+                        KeyValues* zoneElement = zone->GetFirstSubKey();
                         // Create a new Zone struct
                         Zone pZone;
                         while (zoneElement) {
-                            const char *zoneElementKey = zoneElement->GetName();
-                            const char *zoneElementValue = zoneElement->GetString();
+                            const char* zoneElementKey = zoneElement->GetName();
+                            const char* zoneElementValue = zoneElement->GetString();
                             if (!Q_strcmp(zoneElementKey, "min_origin")) {
                                 UTIL_StringToVector(pZone.minOrigin, zoneElementValue);
-                            } else if (!Q_strcmp(zoneElementKey, "max_origin")) {
+                            }
+                            else if (!Q_strcmp(zoneElementKey, "max_origin")) {
                                 UTIL_StringToVector(pZone.maxOrigin, zoneElementValue);
-                            } else if (!Q_strcmp(zoneElementKey, "parameter")) {
+                            }
+                            else if (!Q_strcmp(zoneElementKey, "parameter")) {
                                 pZone.parameterName = zoneElementValue;
                             }
-							zoneElement = zoneElement->GetNextKey();
+                            zoneElement = zoneElement->GetNextKey();
                         }
                         watcherZones->push_back(pZone);
-                    } else {
+                    }
+                    else {
                         Warning("FMOD Adaptive Music - Found an unknown \"zones\" subkey in file\n");
                     }
-					zone = zone->GetNextKey();
+                    zone = zone->GetNextKey();
                 }
             }
             element = element->GetNextKey();
@@ -229,71 +242,80 @@ void CAdaptiveMusicSystem::ParseKeyValue(KeyValues *keyValue) {
         }
         if (!Q_strcmp(watcherType, "health")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity * pNode = CreateEntityByName("adaptive_music_health_watcher");
+            CBaseEntity* pNode = CreateEntityByName("adaptive_music_health_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
-                auto *healthWatcher = dynamic_cast<CAdaptiveMusicHealthWatcher *>(pNode);
+                auto* healthWatcher = dynamic_cast<CAdaptiveMusicHealthWatcher *>(pNode);
                 healthWatcher->SetAdaptiveMusicSystem(this);
                 healthWatcher->SetParameterName(watcherParam);
                 healthWatcher->Activate();
-            } else {
+            }
+            else {
                 Warning("FMOD Adaptive Music - Failed to spawn a HealthWatcher entity\n");
             }
-        } else if (!Q_strcmp(watcherType, "suit")) {
+        }
+        else if (!Q_strcmp(watcherType, "suit")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity * pNode = CreateEntityByName("adaptive_music_suit_watcher");
+            CBaseEntity* pNode = CreateEntityByName("adaptive_music_suit_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
-                auto *suitWatcher = dynamic_cast<CAdaptiveMusicSuitWatcher *>(pNode);
+                auto* suitWatcher = dynamic_cast<CAdaptiveMusicSuitWatcher *>(pNode);
                 suitWatcher->SetAdaptiveMusicSystem(this);
                 suitWatcher->SetParameterName(watcherParam);
                 suitWatcher->Activate();
-            } else {
+            }
+            else {
                 Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
             }
-        } else if (!Q_strcmp(watcherType, "chased")) {
+        }
+        else if (!Q_strcmp(watcherType, "chased")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity * pNode = CreateEntityByName("adaptive_music_chased_watcher");
+            CBaseEntity* pNode = CreateEntityByName("adaptive_music_chased_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
-                auto *chasedWatcher = dynamic_cast<CAdaptiveMusicChasedWatcher *>(pNode);
+                auto* chasedWatcher = dynamic_cast<CAdaptiveMusicChasedWatcher *>(pNode);
                 chasedWatcher->SetAdaptiveMusicSystem(this);
                 chasedWatcher->SetParameterName(watcherParam);
                 chasedWatcher->Activate();
-            } else {
+            }
+            else {
                 Warning("FMOD Adaptive Music - Failed to spawn a SuitWatcher entity\n");
             }
-        } else if (!Q_strcmp(watcherType, "entity")) {
+        }
+        else if (!Q_strcmp(watcherType, "entity")) {
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity * pNode = CreateEntityByName("adaptive_music_entity_watcher");
+            CBaseEntity* pNode = CreateEntityByName("adaptive_music_entity_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
-                auto *entityWatcher = dynamic_cast<CAdaptiveMusicEntityWatcher *>(pNode);
+                auto* entityWatcher = dynamic_cast<CAdaptiveMusicEntityWatcher *>(pNode);
                 entityWatcher->SetAdaptiveMusicSystem(this);
                 entityWatcher->SetEntityClass(watcherEntityClass);
                 entityWatcher->SetEntityWatchedStatus(watcherEntityWatchedStatus);
                 entityWatcher->SetParameterName(watcherParam);
                 entityWatcher->Activate();
-            } else {
+            }
+            else {
                 Warning("FMOD Adaptive Music - Failed to spawn a EntityWatcher entity\n");
             }
-        } else if (!Q_strcmp(watcherType, "zone")) {
+        }
+        else if (!Q_strcmp(watcherType, "zone")) {
             // Step 3, for zone watchers: find the zones key and parse it to find the zones to set
             // Create and spawn the watcher entity, then set its params
-            CBaseEntity * pNode = CreateEntityByName("adaptive_music_zone_watcher");
+            CBaseEntity* pNode = CreateEntityByName("adaptive_music_zone_watcher");
             if (pNode) {
                 DispatchSpawn(pNode);
-                auto *zoneWatcher = dynamic_cast<CAdaptiveMusicZoneWatcher *>(pNode);
+                auto* zoneWatcher = dynamic_cast<CAdaptiveMusicZoneWatcher *>(pNode);
                 zoneWatcher->SetAdaptiveMusicSystem(this);
-				zoneWatcher->SetZones(watcherZones);
+                zoneWatcher->SetZones(watcherZones);
                 zoneWatcher->Activate();
-            } else {
+            }
+            else {
                 Warning("FMOD Adaptive Music - Failed to spawn a ZoneWatcher entity\n");
             }
-        } else {
+        }
+        else {
             Warning("FMOD Adaptive Music - Unknown watcher type: %s\n", watcherType);
         }
-
     }
 }
 
@@ -308,19 +330,20 @@ void CAdaptiveMusicSystem::InitAdaptiveMusic() {
         // Find the adaptive music file
         char szFullName[512];
         Q_snprintf(szFullName, sizeof(szFullName), "maps/%s_adaptivemusic.txt", STRING(gpGlobals->mapname));
-        auto *keyValue = new KeyValues("adaptive_music");
+        auto* keyValue = new KeyValues("adaptive_music");
         if (keyValue->LoadFromFile(filesystem, szFullName, "MOD")) {
             Msg("FMOD Adaptive Music - Loading adaptive music data from '%s'\n", szFullName);
-            KeyValues *keyValueSubset = keyValue->GetFirstSubKey();
+            KeyValues* keyValueSubset = keyValue->GetFirstSubKey();
             while (keyValueSubset) {
                 ParseKeyValue(keyValueSubset);
                 keyValueSubset = keyValueSubset->GetNextKey();
             }
-        } else {
+        }
+        else {
             Msg("FMOD Adaptive Music - Could not load adaptive music file '%s'\n", szFullName);
         }
     }
-        // Else shutdown the Adaptive Music
+    // Else shutdown the Adaptive Music
     else {
         ShutDownAdaptiveMusic();
     }
