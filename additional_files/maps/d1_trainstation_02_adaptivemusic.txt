@@ -1,0 +1,51 @@
+"adaptive_music"
+{
+	"globals"
+	{
+		"bank" "master"
+		"event" "d1_trainstation_02"
+	}
+	"watcher"
+	{
+		"type" "zone"
+		"zones"
+		{
+			"zone"
+			{
+				"min_origin" "-4526 -2705 -89"
+				"max_origin" "-3191 -668 474"
+				"parameter" "in_zone_1"
+			}
+			"zone"
+			{
+				"min_origin" "-3199 -3647 -37"
+				"max_origin" "-514 -632 728"
+				"parameter" "in_zone_2"
+			}
+			"zone"
+			{
+				"min_origin" "-3572 -5307 -118"
+				"max_origin" "-514 -3647 728"
+				"parameter" "in_zone_3"
+			}
+			"zone"
+			{
+				"min_origin" "-3777 -5307 -118"
+				"max_origin" "-3572 -4198 632"
+				"parameter" "in_zone_3"
+			}
+			"zone"
+			{
+				"min_origin" "-5561 -4198 -27"
+				"max_origin" "-3550 -3318 632"
+				"parameter" "in_zone_4"
+			}
+			"zone"
+			{
+				"min_origin" "-5397 -4597 -50"
+				"max_origin" "-4995 -4162 241"
+				"parameter" "in_zone_5"
+			}
+		}
+	}
+}
