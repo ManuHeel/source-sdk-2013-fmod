@@ -17,6 +17,7 @@
 #include "interface.h"
 #include "filesystem.h"
 #include "engine/iserverplugin.h"
+#include "cdll_int.h"
 #include "eiface.h"
 #include "igameevents.h"
 #include "convar.h"
@@ -33,7 +34,7 @@
 #include "tier0/memdbgon.h"
 
 // Interfaces from the engine
-IVEngineServer *engine = NULL;				 // helper functions (messaging clients, loading content, making entities, running commands, etc)
+IVEngineClient *engine = NULL;				 // helper functions (messaging clients, loading content, making entities, running commands, etc)
 IGameEventManager *gameeventmanager_ = NULL; // game events interface
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
@@ -138,7 +139,7 @@ bool CAdaptiveMusicClientPlugin::Load(CreateInterfaceFn interfaceFactory, Create
 		Warning("Unable to load gameinfomanager, ignoring\n");
 	}
 
-	engine = (IVEngineServer *)interfaceFactory(INTERFACEVERSION_VENGINESERVER, NULL);
+	engine = (IVEngineClient *)interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION, NULL);
 	gameeventmanager = (IGameEventManager *)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER, NULL);
 	helpers = (IServerPluginHelpers *)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, NULL);
 	enginetrace = (IEngineTrace *)interfaceFactory(INTERFACEVERSION_ENGINETRACE_SERVER, NULL);
@@ -268,6 +269,7 @@ void CAdaptiveMusicClientPlugin::SetCommandClient(int index)
 
 void ClientPrint(edict_t *pEdict, char *format, ...)
 {
+	/*
 	va_list argptr;
 	static char string[1024];
 
@@ -276,12 +278,14 @@ void ClientPrint(edict_t *pEdict, char *format, ...)
 	va_end(argptr);
 
 	engine->ClientPrintf(pEdict, string);
+	*/
 }
 //---------------------------------------------------------------------------------
 // Purpose: called on level start
 //---------------------------------------------------------------------------------
 void CAdaptiveMusicClientPlugin::ClientSettingsChanged(edict_t *pEdict)
 {
+	/*
 	if (playerinfomanager)
 	{
 		IPlayerInfo *playerinfo = playerinfomanager->GetPlayerInfo(pEdict);
@@ -298,6 +302,7 @@ void CAdaptiveMusicClientPlugin::ClientSettingsChanged(edict_t *pEdict)
 			// this is here to give a real example of how to use the playerinfo interface
 		}
 	}
+	*/
 }
 
 //---------------------------------------------------------------------------------
@@ -450,7 +455,7 @@ void CAdaptiveMusicClientPlugin::FireGameEvent(KeyValues *event)
 //---------------------------------------------------------------------------------
 // Purpose: an example of how to implement a new command
 //---------------------------------------------------------------------------------
-CON_COMMAND(AM_SP_version, "Prints the version of the AdaptiveMusic Client Plugin")
+CON_COMMAND(AM_CP_version, "Prints the version of the AdaptiveMusic Client Plugin")
 {
 	Msg("AdaptiveMusic Client Plugin v0.0.1\n");
 }

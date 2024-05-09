@@ -249,9 +249,9 @@ void CAdaptiveMusicServerPlugin::ClientDisconnect(edict_t *pEntity)
 void CAdaptiveMusicServerPlugin::ClientPutInServer(edict_t *pEntity, char const *playername)
 {
 	KeyValues *kv = new KeyValues("msg");
-	kv->SetString("title", "AdaptiveMusic Server Plugin");
-	kv->SetString("msg", "AdaptiveMusic Server Plugin text text text text text text text text");
-	kv->SetColor("color", Color(255, 255, 255, 0));
+	kv->SetString("title", "AdaptiveMusic Server Plugin loaded");
+	kv->SetString("msg", "AdaptiveMusic Server Plugin loaded");
+	kv->SetColor("color", Color(0, 0, 0, 255));
 	kv->SetInt("level", 5);
 	kv->SetInt("time", 10);
 	helpers->CreateMessage(pEntity, DIALOG_MSG, kv, this);
