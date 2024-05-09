@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-//	ADAPTIVEMUSIC_SERVERPLUGIN.VPC
+//	ADAPTIVEMUSIC_CLIENTPLUGIN.VPC
 //
 //	Project Script
 //-----------------------------------------------------------------------------
@@ -14,7 +14,7 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories		"$BASE,$SRCDIR\game\server,$SRCDIR\game\shared"
-		$PreprocessorDefinitions			"$BASE;adaptivemusic_serverpluginONLY;_MBCS"
+		$PreprocessorDefinitions			"$BASE;adaptivemusic_clientpluginONLY;_MBCS"
 	}
 
 	$Linker
@@ -23,11 +23,11 @@ $Configuration
 	}
 }
 
-$Project "adaptivemusic_serverplugin"
+$Project "adaptivemusic_clientplugin"
 {
 	$Folder	"Source Files"
 	{
-		$File	"adaptivemusic_serverplugin.cpp"
+		$File	"adaptivemusic_clientplugin.cpp"
 	}
 
 	$Folder	"Header Files"
