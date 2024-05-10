@@ -36,7 +36,7 @@ CFMODManager::~CFMODManager()
 // - str1: The starting string
 // - str2: The ending string
 // Output: The joined 2 strings
-//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------H
 const char* Concatenate(const char* str1, const char* str2) {
     size_t len1 = 0;
     size_t len2 = 0;
