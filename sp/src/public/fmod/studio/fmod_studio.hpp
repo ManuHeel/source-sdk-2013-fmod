@@ -1,6 +1,6 @@
 /* ======================================================================================== */
 /* FMOD Studio API - C++ header file.                                                       */
-/* Copyright (c), Firelight Technologies Pty, Ltd. 2004-2023.                               */
+/* Copyright (c), Firelight Technologies Pty, Ltd. 2004-2024.                               */
 /*                                                                                          */
 /* Use this header in conjunction with fmod_studio_common.h (which contains all the         */
 /* constants / callbacks) to develop using the C++ language.                                */
@@ -130,6 +130,8 @@ namespace Studio
     class EventDescription
     {
     private:
+        // Constructor made private so user cannot statically instance the class.
+        EventDescription();
         EventDescription(const EventDescription &);
 
     public:
@@ -177,9 +179,6 @@ namespace Studio
         FMOD_RESULT F_API setCallback(FMOD_STUDIO_EVENT_CALLBACK callback, FMOD_STUDIO_EVENT_CALLBACK_TYPE callbackmask = FMOD_STUDIO_EVENT_CALLBACK_ALL);
         FMOD_RESULT F_API getUserData(void **userdata) const;
         FMOD_RESULT F_API setUserData(void *userdata);
-
-        // Constructor made private so user cannot statically instance the class.
-        EventDescription();
     };
 
     class EventInstance
@@ -343,7 +342,7 @@ namespace Studio
         FMOD_RESULT F_API getStringCount(int *count) const;
         FMOD_RESULT F_API getStringInfo(int index, FMOD_GUID *id, char *path, int size, int *retrieved) const;
         FMOD_RESULT F_API getEventCount(int *count) const;
-        FMOD_RESULT F_API getEventList(EventDescription ***array, int capacity, int *count) const;
+        FMOD_RESULT F_API getEventList(EventDescription **array, int capacity, int *count) const;
         FMOD_RESULT F_API getBusCount(int *count) const;
         FMOD_RESULT F_API getBusList(Bus **array, int capacity, int *count) const;
         FMOD_RESULT F_API getVCACount(int *count) const;
