@@ -79,7 +79,6 @@ CAdaptiveMusicSystem::CAdaptiveMusicSystem() : CAutoGameSystem("CAdaptiveMusicSy
 //-----------------------------------------------------------------------------
 bool CAdaptiveMusicSystem::Init() {
     Msg("FMOD Adaptive Music - Start FMOD event listener\n");
-    pAdaptiveMusicEventListener = new CAdaptiveMusicEventListener(this);
     return true;
 }
 
