@@ -84,3 +84,12 @@ config.cfg
 .idea/
 CMakeLists.txt
 cmake-build-*/
+
+# Plugin build results
+sp/src/utils/*/*.dll
+sp/src/utils/*/*.lib
+sp/src/utils/*/*.pdb
+sp/src/utils/*/*/*.dll
+sp/src/utils/*/*/*.lib
+sp/src/utils/*/*/*.pdb
+sp/game/bin
