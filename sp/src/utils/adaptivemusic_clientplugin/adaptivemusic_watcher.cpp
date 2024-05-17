@@ -45,9 +45,12 @@ void CAdaptiveMusicZoneWatcher::SetZones(std::list<AdaptiveMusicZone_t> *zonesRe
 }
 
 void CAdaptiveMusicZoneWatcher::Think() {
-    edict_t *pPlayer = pAdaptiveMusicClientPlugin->entityinfomanager->FindEntityByClassname(pPlayer, "player");
-    Vector pPlayerVector = pPlayer->GetCollideable()->GetCollisionOrigin();
-	Log(pPlayerVector.x);
+    if (pAdaptiveMusicClientPlugin != nullptr) {
+        edict_t *pPlayer = NULL;
+        pPlayer = pAdaptiveMusicClientPlugin->entityinfomanager->FindEntityByClassname(pPlayer, "player");
+        Vector pPlayerVector = pPlayer->GetCollideable()->GetCollisionOrigin();
+        Log("%f", pPlayerVector.x);
+    }
     /*
     if (pAdaptiveMusicPlayer != nullptr) {
         auto currentPosition = pAdaptiveMusicPlayer->GetAbsOrigin();

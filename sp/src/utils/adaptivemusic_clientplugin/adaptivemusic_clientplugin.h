@@ -49,14 +49,12 @@ struct AdaptiveMusicZone_t {
 };
 
 // Struct for holding Scene data
-/*
 struct AdaptiveMusicScene_t {
     const char *sceneName;
     const char *stateName;
     const char *parameterName;
     bool lastKnownSceneStateStatus = false;
 };
-*/
 
 //---------------------------------------------------------------------------------
 // Purpose: AdaptiveMusic Client Plugin
@@ -69,6 +67,8 @@ public:
 
     IPlayerInfoManager *playerinfomanager = NULL; // game dll interface to interact with players
     IEntityInfoManager *entityinfomanager = NULL; // game dll interface to interact with all entities (like IPlayerInfo)
+
+    CAdaptiveMusicZoneWatcher* pZoneWatcher = new CAdaptiveMusicZoneWatcher; //TODELETE
 
     // IServerPluginCallbacks methods
     virtual bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory);
