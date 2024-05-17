@@ -43,6 +43,44 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+// Interfaces from the engine
+IVEngineClient *engine = NULL;                 // helper functions (messaging clients, loading content, making entities, running commands, etc)
+IGameEventManager *gameeventmanager_ = NULL; // game events interface
+#ifndef GAME_DLL
+#define gameeventmanager gameeventmanager_
+#endif
+//IPlayerInfoManager *playerinfomanager = NULL; // game dll interface to interact with players
+//IEntityInfoManager *entityinfomanager = NULL; // game dll interface to interact with all entities (like IPlayerInfo)
+IGameInfoManager *gameinfomanager = NULL;      // game dll interface to get data from game rules directly
+IServerPluginHelpers *helpers = NULL;          // special 3rd party plugin helpers from the engine
+IUniformRandomStream *randomStr = NULL;
+IEngineTrace *enginetrace = NULL;
+
+CGlobalVars *gpGlobals = NULL;
+
+// FMOD client specific variables
+FMOD::Studio::System *fmodStudioSystem;
+FMOD::Studio::Bank *loadedFmodStudioBank;
+char *loadedFmodStudioBankName;
+FMOD::Studio::Bank *loadedFmodStudioStringsBank;
+FMOD::Studio::EventDescription *loadedFmodStudioEventDescription;
+char *loadedFmodStudioEventPath;
+FMOD::Studio::EventInstance *createdFmodStudioEventInstance;
+
+//
+// The plugin is a static singleton that is exported as an interface
+//
+CAdaptiveMusicClientPlugin g_AdaptiveMusicClientPlugin;
+
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CAdaptiveMusicClientPlugin, IServerPluginCallbacks,
+                                  INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_AdaptiveMusicClientPlugin);
+
+// Adaptive Music System (inherited from the server-side)
+ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE,
+                                "Automatically set by the game when an adaptive music file is available for the current map.");
+const char *loadedBankName;
+const char *startedEventPath;
+
 // useful helper func
 #ifndef GAME_DLL
 
@@ -234,7 +272,7 @@ void ClientPrint(edict_t *pEdict, char *format, ...) {
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: called on level start
+// Purpose: called when a client updated its settings
 //---------------------------------------------------------------------------------
 void CAdaptiveMusicClientPlugin::ClientSettingsChanged(edict_t *pEdict) {
     /*

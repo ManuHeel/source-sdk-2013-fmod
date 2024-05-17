@@ -6,13 +6,15 @@
 
 #include <list>
 #include <string>
-//#include "adaptivemusic_clientplugin.h"
 
 //===========================================================================================================
 // BASE WATCHER
 //===========================================================================================================
 
+// Forward declarations
 class CAdaptiveMusicClientPlugin;
+struct AdaptiveMusicZone_t;
+struct AdaptiveMusicScene_t;
 
 class CAdaptiveMusicWatcher {
 
@@ -35,5 +37,27 @@ public:
 private:
 
 };
+
+//===========================================================================================================
+// ZONE WATCHER
+//===========================================================================================================
+class CAdaptiveMusicZoneWatcher : public CAdaptiveMusicWatcher {
+
+protected:
+    // Zone watcher
+    std::list<AdaptiveMusicZone_t> *zones;
+
+public:
+
+    explicit CAdaptiveMusicZoneWatcher();
+
+    void SetZones(std::list<AdaptiveMusicZone_t> *zonesRef);
+
+    void Think();
+
+private:
+
+};
+
 
 #endif

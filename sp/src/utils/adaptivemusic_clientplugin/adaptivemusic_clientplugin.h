@@ -38,37 +38,25 @@
 #include "adaptivemusic_watcher.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
+// #include "tier0/memdbgon.h"
 
-// Interfaces from the engine
-IVEngineClient *engine = NULL;                 // helper functions (messaging clients, loading content, making entities, running commands, etc)
-IGameEventManager *gameeventmanager_ = NULL; // game events interface
-#ifndef GAME_DLL
-#define gameeventmanager gameeventmanager_
-#endif
-IPlayerInfoManager *playerinfomanager = NULL; // game dll interface to interact with players
-IEntityInfoManager *entityinfomanager = NULL; // game dll interface to interact with all entities (like IPlayerInfo)
-IGameInfoManager *gameinfomanager = NULL;      // game dll interface to get data from game rules directly
-IServerPluginHelpers *helpers = NULL;          // special 3rd party plugin helpers from the engine
-IUniformRandomStream *randomStr = NULL;
-IEngineTrace *enginetrace = NULL;
+// Struct for holding ZoneWatcher zones data
+struct AdaptiveMusicZone_t {
+    float minOrigin[3];
+    float maxOrigin[3];
+    const char *parameterName;
+    bool lastKnownZoneStatus = false;
+};
 
-CGlobalVars *gpGlobals = NULL;
-
-// FMOD client specific variables
-FMOD::Studio::System *fmodStudioSystem;
-FMOD::Studio::Bank *loadedFmodStudioBank;
-char *loadedFmodStudioBankName;
-FMOD::Studio::Bank *loadedFmodStudioStringsBank;
-FMOD::Studio::EventDescription *loadedFmodStudioEventDescription;
-char *loadedFmodStudioEventPath;
-FMOD::Studio::EventInstance *createdFmodStudioEventInstance;
-
-// Adaptive Music System (inherited from the server-side)
-ConVar adaptive_music_available("adaptive_music_available", "0", FCVAR_NONE,
-                                "Automatically set by the game when an adaptive music file is available for the current map.");
-const char *loadedBankName;
-const char *startedEventPath;
+// Struct for holding Scene data
+/*
+struct AdaptiveMusicScene_t {
+    const char *sceneName;
+    const char *stateName;
+    const char *parameterName;
+    bool lastKnownSceneStateStatus = false;
+};
+*/
 
 //---------------------------------------------------------------------------------
 // Purpose: AdaptiveMusic Client Plugin
@@ -79,7 +67,8 @@ public:
 
     ~CAdaptiveMusicClientPlugin();
 
-    //CAdaptiveMusicClientPlugin *pFMODManager;
+    IPlayerInfoManager *playerinfomanager = NULL; // game dll interface to interact with players
+    IEntityInfoManager *entityinfomanager = NULL; // game dll interface to interact with all entities (like IPlayerInfo)
 
     // IServerPluginCallbacks methods
     virtual bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory);
@@ -160,13 +149,5 @@ public:
 private:
     int m_iClientCommandIndex;
 };
-
-//
-// The plugin is a static singleton that is exported as an interface
-//
-CAdaptiveMusicClientPlugin g_AdaptiveMusicClientPlugin;
-
-EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CAdaptiveMusicClientPlugin, IServerPluginCallbacks,
-                                  INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_AdaptiveMusicClientPlugin);
 
 #endif
